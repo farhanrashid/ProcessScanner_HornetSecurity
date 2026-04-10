@@ -10,6 +10,28 @@ uses
 
 type
   TSnapshot = TDictionary<DWORD, TProcessNode>; // PID -> ProcessNode
+
+  UNICODE_STRING = record
+    Length: USHORT;
+    MaximumLength: USHORT;
+    Buffer: PWideChar;
+  end;
+
+  TSystemProcessInformation = packed record
+    NextEntryOffset: ULONG;
+    NumberOfThreads: ULONG;
+    Reserved1: array[0..5] of IntPtr;
+    CreateTime: Int64;
+    UserTime: Int64;
+    KernelTime: Int64;
+    ImageName: UNICODE_STRING;
+    BasePriority: LongInt;
+    UniqueProcessId: Pointer;
+    InheritedFromUniqueProcessId: Pointer;
+  end;
+
+  PSystemProcessInformation = ^TSystemProcessInformation;
+
   TfrmMain = class(TForm)
     pnlSettings: TPanel;
     pnlMain: TPanel;
@@ -31,6 +53,7 @@ type
     FRootNode : TProcessNode;
 
     function GetSnapshot: TSnapshot;
+    function GetProcessList: TSnapshot;
 
   public
     { Public declarations }
@@ -45,17 +68,30 @@ uses TLHelp32;
 
 const
   PROCESS_QUERY_LIMITED_INFORMATION = $1000;
+  SystemProcessInformation = 5;
 
 function QueryFullProcessImageNameW(hProcess: THandle; dwFlags: DWORD;
   lpExeName: PWideChar; var lpdwSize: DWORD): BOOL; stdcall;
   external 'kernel32.dll' name 'QueryFullProcessImageNameW';
 
+function NtQuerySystemInformation(
+  SystemInformationClass: ULONG;
+  SystemInformation: Pointer;
+  SystemInformationLength: ULONG;
+  ReturnLength: PULONG
+): NTSTATUS; stdcall; external 'ntdll.dll';
+
 {$R *.dfm}
 
 procedure TfrmMain.FormCreate(Sender: TObject);
+var
+  node   : TProcessNode;
 begin
-  FNodeMap := GetSnapshot;
+  FNodeMap := GetSnapshot; //TODO GetProcessList;
   FRootNode := TProcessNode.Create;
+
+  for node in FNodeMap.Values do
+    memoLog.Lines.Add(node.ProcessInfo.ExeName + '=' + node.ProcessInfo.ExePath);
 end;
 
 procedure TfrmMain.FormDestroy(Sender: TObject);
@@ -78,7 +114,7 @@ var
   begin
     Result := '';
     // TODO : not working for system processes
-    hProc := OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, PID);
+    hProc := OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION or PROCESS_VM_READ, False, PID);
     if hProc = 0 then
       Exit;
     try
@@ -122,6 +158,66 @@ begin
     until not Process32NextW(hSnap, pe32);
   finally
     CloseHandle(hSnap);
+  end;
+end;
+
+function TfrmMain.GetProcessList: TSnapshot;
+var
+  Buffer: Pointer;
+  Size: ULONG;
+  Status: NTSTATUS;
+  Proc: PSystemProcessInformation;
+  node   : TProcessNode;
+
+begin
+  Result := TSnapshot.Create;
+  Size := 0;
+
+  GetMem(Buffer, 1024 * 1024 * 10); // 10MB initial buffer
+
+  try
+    while True do
+    begin
+      Status := NtQuerySystemInformation(
+        SystemProcessInformation,
+        Buffer,
+        Size,
+        @Size
+      );
+
+      if Status = 0 then
+        Break;
+
+      if Status = $C0000004 {STATUS_INFO_LENGTH_MISMATCH} then
+      begin
+        ReallocMem(Buffer, Size);
+        Continue;
+      end;
+
+      Exit;
+    end;
+
+    Proc := Buffer;
+
+    while True do
+    begin
+      node := TProcessNode.Create;
+      node.ProcessInfo.PID       := DWORD(NativeUInt(Proc^.UniqueProcessId));
+      node.ProcessInfo.ParentPID := DWORD(NativeUInt(Proc^.InheritedFromUniqueProcessId));
+      node.ProcessInfo.ExeName   := string(Proc^.ImageName.Buffer);
+      node.ProcessInfo.ExePath   := string(Proc^.ImageName.Buffer);
+
+      Result.Add(node.ProcessInfo.PID, node);
+      if Proc^.NextEntryOffset = 0 then
+        Break;
+
+      Proc := PSystemProcessInformation(
+        NativeUInt(Proc) + Proc^.NextEntryOffset
+      );
+    end;
+
+  finally
+    FreeMem(Buffer);
   end;
 end;
 
