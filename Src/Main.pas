@@ -5,6 +5,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ExtCtrls, Vcl.StdCtrls, Vcl.ComCtrls,
+  System.Types, System.Generics.Collections,
   ProcessNode;
 
 type
@@ -21,8 +22,12 @@ type
     cbSystemProcess: TCheckBox;
     cbProcessOtherUsers: TCheckBox;
     lvDetails: TListView;
+    procedure FormCreate(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
   private
     { Private declarations }
+    FNodeMap : TDictionary<DWORD, TProcessNode>;  // PID -> ProcessNode
+    FRootNode : TProcessNode;
   public
     { Public declarations }
   end;
@@ -33,7 +38,18 @@ var
 implementation
 
 
-
 {$R *.dfm}
+
+procedure TfrmMain.FormCreate(Sender: TObject);
+begin
+  FNodeMap := TDictionary<DWORD, TProcessNode>.Create;
+  FRootNode := TProcessNode.Create;
+end;
+
+procedure TfrmMain.FormDestroy(Sender: TObject);
+begin
+  FNodeMap.Free;
+  FRootNode.Free;
+end;
 
 end.

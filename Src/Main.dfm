@@ -10,6 +10,8 @@ object frmMain: TfrmMain
   Font.Height = -12
   Font.Name = 'Segoe UI'
   Font.Style = []
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
   TextHeight = 15
   object pnlSettings: TPanel
     Left = 0
