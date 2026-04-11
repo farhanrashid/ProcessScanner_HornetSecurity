@@ -21,24 +21,28 @@ object frmMain: TfrmMain
     Align = alTop
     TabOrder = 0
     object cbSystemProcess: TCheckBox
-      Left = 10
+      Left = 110
       Top = 10
       Width = 129
       Height = 17
       Caption = 'System Processes'
+      Checked = True
+      State = cbChecked
       TabOrder = 0
     end
     object cbProcessOtherUsers: TCheckBox
-      Left = 180
+      Left = 280
       Top = 10
       Width = 185
       Height = 17
       Caption = 'Process from other users'
+      Checked = True
+      State = cbChecked
       TabOrder = 1
     end
     object btnRefresh: TButton
-      Left = 848
-      Top = 10
+      Left = 4
+      Top = 6
       Width = 100
       Height = 25
       Caption = 'Refresh Now'
@@ -70,6 +74,7 @@ object frmMain: TfrmMain
       Align = alClient
       Indent = 19
       TabOrder = 0
+      OnChange = tvProcessesChange
     end
   end
   object pnlDetails: TPanel
@@ -94,8 +99,24 @@ object frmMain: TfrmMain
       Width = 960
       Height = 102
       Align = alClient
-      Columns = <>
+      Columns = <
+        item
+          Caption = 'Property'
+          Width = 100
+        end
+        item
+          Caption = 'Value'
+          Width = 800
+        end>
+      Items.ItemData = {
+        059D0000000300000000000000FFFFFFFFFFFFFFFF01000000FFFFFFFF000000
+        0009460069006C0065002000500061007400680000F81E2C2400000000FFFFFF
+        FFFFFFFFFF01000000FFFFFFFF000000000A500072006F006300650073007300
+        20004900440000C81C2C2400000000FFFFFFFFFFFFFFFF01000000FFFFFFFF00
+        0000000A530065007300730069006F006E002000490044000090232C24FFFFFF
+        FFFFFF}
       TabOrder = 0
+      ViewStyle = vsReport
     end
   end
   object pnlLog: TPanel
@@ -126,7 +147,7 @@ object frmMain: TfrmMain
   end
   object CountdownTimer: TTimer
     OnTimer = CountdownTimerTimer
-    Left = 664
+    Left = 504
     Top = 8
   end
 end

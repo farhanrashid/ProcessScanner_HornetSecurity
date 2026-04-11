@@ -444,7 +444,7 @@ function QuerySessionID(PID: DWORD): DWORD;
 var
   sid: DWORD;
 begin
-  Result := DWORD(-1);
+  Result := DWORD(0);
   if ProcessIdToSessionId(PID, sid) then
     Result := sid;
 end;

@@ -28,6 +28,7 @@ type
     procedure FormDestroy(Sender: TObject);
     procedure btnRefreshClick(Sender: TObject);
     procedure CountdownTimerTimer(Sender: TObject);
+    procedure tvProcessesChange(Sender: TObject; Node: TTreeNode);
   private
     { Private declarations }
     FSnapshot : TSnapshot;
@@ -74,7 +75,7 @@ begin
 
     for node in FSnapshot.Values do
     begin
-      memoLog.Lines.Add(node.ExeName + '=' + node.PID.ToString + '=' + node.ParentPID.ToString);
+      //memoLog.Lines.Add(node.ExeName + '=' + node.PID.ToString + '=' + node.ParentPID.ToString);
 
       if (node.PID = 0) or not FSnapshot.TryGetValue(node.ParentPID, Parent) then
         Parent := FRootNode;
@@ -93,6 +94,25 @@ begin
     CountdownTimer.Enabled := True;
   end;
 
+end;
+
+procedure TfrmMain.tvProcessesChange(Sender: TObject; Node: TTreeNode);
+var
+  pid : DWORD;
+  ProcessNode: TProcessNode;
+begin
+  if not Assigned(Node) then Exit;
+
+  pid := DWORD(NativeUInt(Node.Data));
+
+  if FSnapshot.TryGetValue(pid, ProcessNode) then
+  begin
+    //ShowMessage(ProcessNode.ExePath);
+    lvDetails.Items[0].SubItems[0] := ProcessNode.ExePath;
+    lvDetails.Items[1].SubItems[0] := ProcessNode.PID.ToString;
+    lvDetails.Items[2].SubItems[0] := ProcessNode.SessionID.ToString;
+
+  end;
 end;
 
 procedure TfrmMain.RebuildTreeView;

@@ -6,3 +6,6 @@ TaskManager.identcache
 TaskManager.~dsk
 /__history
 TaskManager.dsk
+/Win32/Release
+/Win64/Debug
+/Win64/Release
