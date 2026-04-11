@@ -1,9 +1,5 @@
 ﻿unit WinUtils;
 
-{$IFDEF FPC}
-  {$MODE Delphi}
-{$ENDIF}
-
 interface
 
 uses
@@ -130,7 +126,7 @@ begin
 end;
 
 // ---------------------------------------------------------------------------
-// SeDebugPrivilege  (mirrors PhSetTokenPrivilege in phlib)
+// SeDebugPrivilege
 // ---------------------------------------------------------------------------
 
 function EnableDebugPrivilege: Boolean;
@@ -192,6 +188,10 @@ begin
   end;
 end;
 
+// ---------------------------------------------------------------------------
+// NativePathToWin32Path
+// ---------------------------------------------------------------------------
+
 function NativePathToWin32Path(const NativePath: string): string;
 var
   i  : Integer;
@@ -213,7 +213,7 @@ begin
 end;
 
 // ---------------------------------------------------------------------------
-// Method A: NtQueryInformationProcess (requires open process handle)
+// NtQueryInformationProcess (requires open process handle)
 // ---------------------------------------------------------------------------
 
 function QueryProcessFileNameByHandle(ProcessHandle: THandle; InfoClass: DWORD): string;
@@ -254,6 +254,10 @@ begin
     FreeMem(Buffer);
   end;
 end;
+
+// ---------------------------------------------------------------------------
+// ResolveShortNameToFullPath
+// ---------------------------------------------------------------------------
 
 function ResolveShortNameToFullPath(const ShortName: string): string;
 var
@@ -304,10 +308,18 @@ begin
   end;
 end;
 
+// ---------------------------------------------------------------------------
+// IsFileNameOnly
+// ---------------------------------------------------------------------------
+
 function IsFileNameOnly(const S: string): Boolean;
 begin
   Result := ExtractFilePath(S) = '';
 end;
+
+// ---------------------------------------------------------------------------
+// GetProcessFilePathByHandle
+// ---------------------------------------------------------------------------
 
 function GetProcessFilePathByHandle(ProcessHandle: THandle): string;
 begin
