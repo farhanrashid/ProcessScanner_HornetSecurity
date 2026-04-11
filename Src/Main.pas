@@ -22,13 +22,16 @@ type
     cbSystemProcess: TCheckBox;
     cbProcessOtherUsers: TCheckBox;
     lvDetails: TListView;
+    btnRefresh: TButton;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
+    procedure btnRefreshClick(Sender: TObject);
   private
     { Private declarations }
     FSnapshot : TSnapshot;
     FRootNode : TProcessNode;
-
+    FinRefresh : Boolean;
+    procedure RefreshView;
   public
     { Public declarations }
   end;
@@ -40,15 +43,43 @@ implementation
 
 {$R *.dfm}
 
-procedure TfrmMain.FormCreate(Sender: TObject);
+procedure TfrmMain.btnRefreshClick(Sender: TObject);
+begin
+  RefreshView;
+end;
+
+procedure TfrmMain.RefreshView;
 var
   node   : TProcessNode;
+  oldSnapshot : TSnapshot;
+  oldRootNode : TProcessNode;
 begin
-  FSnapshot := GetSnapshot;
-  FRootNode := TProcessNode.Create;
+  if FinRefresh then exit;
+  FinRefresh := True;
 
-  for node in FSnapshot.Values do
-    memoLog.Lines.Add(node.ProcessInfo.ExeName + '=' + node.ProcessInfo.ExePath);
+  oldSnapshot := FSnapshot;
+  oldRootNode := FRootNode;
+
+  try
+    FSnapshot := GetSnapshot;
+    FRootNode := TProcessNode.Create;
+
+    for node in FSnapshot.Values do
+      memoLog.Lines.Add(node.ExeName + '=' + node.PID.ToString + '=' + node.ParentPID.ToString);
+  finally
+    if Assigned(oldSnapshot) then oldSnapshot.Free;
+    if Assigned(oldRootNode) then oldRootNode.Free;
+    FinRefresh := False;
+  end;
+
+end;
+
+procedure TfrmMain.FormCreate(Sender: TObject);
+begin
+  FSnapshot := Nil;
+  FRootNode := Nil;
+  FinRefresh := False;
+  RefreshView;
 end;
 
 procedure TfrmMain.FormDestroy(Sender: TObject);

@@ -7,23 +7,21 @@ uses
 
 type
 
-  TProcessInfo = record
+  TProcessNode = class;   //forward declararion
+  TSnapshot = TObjectDictionary<DWORD, TProcessNode>; // PID -> ProcessNode
+
+  TProcessNode = class
+  public
     PID        : DWORD;
     ParentPID  : DWORD;
     ExeName    : string;   // file name only
     ExePath    : string;   // full path
     SessionID  : DWORD;
-  end;
 
-  TProcessNode = class
-  public
-    ProcessInfo : TProcessInfo;
-    Childs   : TObjectList<TProcessNode>;
+    Childs   : TSnapshot;
     constructor Create;
     destructor Destroy; override;
   end;
-
-  TSnapshot = TDictionary<DWORD, TProcessNode>; // PID -> ProcessNode
 
   function GetSnapshot: TSnapshot;
 
@@ -34,7 +32,7 @@ uses Windows, TLHelp32, System.SysUtils, WinUtils;
 constructor TProcessNode.Create;
 begin
   inherited;
-  Childs := TObjectList<TProcessNode>.Create(True); // owns object True
+  Childs := TSnapshot.Create; // dont own objects
 end;
 
 destructor TProcessNode.Destroy;
@@ -57,7 +55,7 @@ var
   FilePath : String;
   FilePaths : TDictionary<DWORD, String>;
 begin
-  Result := TSnapshot.Create;
+  Result := TSnapshot.Create([doOwnsValues]);  // own objects
 
   // Try to enable debug privilege first (best effort - continues even if it fails)
   EnableDebugPrivilege;
@@ -76,18 +74,18 @@ begin
 
       repeat
         node := TProcessNode.Create;
-        node.ProcessInfo.PID       := pe32.th32ProcessID;
-        node.ProcessInfo.ParentPID := pe32.th32ParentProcessID;
-        node.ProcessInfo.ExeName   := ExtractFileName(pe32.szExeFile);
+        node.PID       := pe32.th32ProcessID;
+        node.ParentPID := pe32.th32ParentProcessID;
+        node.ExeName   := ExtractFileName(pe32.szExeFile);
         FilePath := GetProcessFilePath(pe32.th32ProcessID);
 
         if (FilePath = '') then
-          FilePaths.TryGetValue(node.ProcessInfo.PID, FilePath);
+          FilePaths.TryGetValue(node.PID, FilePath);
 
-        node.ProcessInfo.ExePath   := FilePath;
-        node.ProcessInfo.SessionID := QuerySessionID(pe32.th32ProcessID);
+        node.ExePath   := FilePath;
+        node.SessionID := QuerySessionID(pe32.th32ProcessID);
 
-        Result.Add(node.ProcessInfo.PID, node);
+        Result.Add(node.PID, node);
       until not Process32NextW(hSnap, pe32);
     finally
       CloseHandle(hSnap);

@@ -36,6 +36,15 @@ object frmMain: TfrmMain
       Caption = 'Process from other users'
       TabOrder = 1
     end
+    object btnRefresh: TButton
+      Left = 848
+      Top = 10
+      Width = 75
+      Height = 25
+      Caption = 'Refresh'
+      TabOrder = 2
+      OnClick = btnRefreshClick
+    end
   end
   object pnlMain: TPanel
     Left = 0
