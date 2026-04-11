@@ -50,14 +50,14 @@ var
   pe32   : TProcessEntry32W;
   node   : TProcessNode;
   FilePath : String;
-  ImageNames : TDictionary<WORD, String>;
+  FilePaths : TDictionary<WORD, String>;
 begin
   Result := TSnapshot.Create;
 
   // Try to enable debug privilege first (best effort - continues even if it fails)
   EnableDebugPrivilege;
 
-  ImageNames := GetAllImageNames;
+  FilePaths := GetAllFilePaths;
 
   hSnap := CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
   if hSnap = INVALID_HANDLE_VALUE then
@@ -75,7 +75,7 @@ begin
       FilePath := GetProcessFilePath(pe32.th32ProcessID);
 
       if (FilePath = '') then
-        ImageNames.TryGetValue(pe32.th32ProcessID, FilePath);
+        FilePaths.TryGetValue(node.ProcessInfo.PID, FilePath);
 
       node.ProcessInfo.ExePath   := FilePath;
       node.ProcessInfo.SessionID := QuerySessionID(pe32.th32ProcessID);
@@ -84,7 +84,7 @@ begin
     until not Process32NextW(hSnap, pe32);
   finally
     CloseHandle(hSnap);
-    ImageNames.Free;
+    FilePaths.Free;
   end;
 end;
 

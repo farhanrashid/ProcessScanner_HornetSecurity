@@ -159,6 +159,8 @@
             <Form>frmMain</Form>
             <FormType>dfm</FormType>
         </DCCReference>
+        <DCCReference Include="Src\ProcessNode.pas"/>
+        <DCCReference Include="Src\WinUtils.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

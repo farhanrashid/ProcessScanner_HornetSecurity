@@ -20,7 +20,6 @@ object frmMain: TfrmMain
     Height = 41
     Align = alTop
     TabOrder = 0
-    ExplicitWidth = 733
     object cbSystemProcess: TCheckBox
       Left = 10
       Top = 10
@@ -45,7 +44,6 @@ object frmMain: TfrmMain
     Height = 535
     Align = alClient
     TabOrder = 1
-    ExplicitWidth = 448
     object Label1: TLabel
       Left = 1
       Top = 1
@@ -63,7 +61,6 @@ object frmMain: TfrmMain
       Align = alClient
       Indent = 19
       TabOrder = 0
-      ExplicitWidth = 446
     end
   end
   object pnlDetails: TPanel
@@ -73,7 +70,6 @@ object frmMain: TfrmMain
     Height = 119
     Align = alBottom
     TabOrder = 2
-    ExplicitWidth = 733
     object lblDetails: TLabel
       Left = 1
       Top = 1
@@ -91,7 +87,6 @@ object frmMain: TfrmMain
       Align = alClient
       Columns = <>
       TabOrder = 0
-      ExplicitWidth = 731
     end
   end
   object pnlLog: TPanel
@@ -118,9 +113,6 @@ object frmMain: TfrmMain
       Align = alClient
       ScrollBars = ssVertical
       TabOrder = 0
-      ExplicitLeft = 5
-      ExplicitTop = 12
-      ExplicitWidth = 283
     end
   end
 end

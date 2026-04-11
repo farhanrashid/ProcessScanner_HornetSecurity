@@ -3,7 +3,8 @@ program TaskManager;
 uses
   Vcl.Forms,
   Main in 'Src\Main.pas' {frmMain},
-  ProcessNode in 'Src\ProcessNode.pas';
+  ProcessNode in 'Src\ProcessNode.pas',
+  WinUtils in 'Src\WinUtils.pas';
 
 {$R *.res}
 

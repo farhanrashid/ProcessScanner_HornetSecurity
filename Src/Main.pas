@@ -26,7 +26,7 @@ type
     procedure FormDestroy(Sender: TObject);
   private
     { Private declarations }
-    FNodeMap : TSnapshot;
+    FSnapshot : TSnapshot;
     FRootNode : TProcessNode;
 
   public
@@ -44,16 +44,16 @@ procedure TfrmMain.FormCreate(Sender: TObject);
 var
   node   : TProcessNode;
 begin
-  FNodeMap := GetSnapshot;
+  FSnapshot := GetSnapshot;
   FRootNode := TProcessNode.Create;
 
-  for node in FNodeMap.Values do
+  for node in FSnapshot.Values do
     memoLog.Lines.Add(node.ProcessInfo.ExeName + '=' + node.ProcessInfo.ExePath);
 end;
 
 procedure TfrmMain.FormDestroy(Sender: TObject);
 begin
-  if Assigned(FNodeMap) then FNodeMap.Free;
+  if Assigned(FSnapshot) then FSnapshot.Free;
   FRootNode.Free;
 end;
 

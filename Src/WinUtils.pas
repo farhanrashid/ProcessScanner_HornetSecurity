@@ -2,16 +2,15 @@
 
 interface
 
-uses
-  Windows, SysUtils, System.Generics.Collections;
+uses Windows, SysUtils, System.Generics.Collections;
 
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
 function EnableDebugPrivilege: Boolean;
+function GetAllFilePaths : TDictionary<WORD, String>; // All PID -> File path
 function GetProcessFilePath(ProcessId: DWORD): string;
-function GetAllImageNames : TDictionary<WORD, String>; // All PID -> File path
 function QuerySessionID(PID: DWORD): DWORD;
 
 implementation
@@ -41,8 +40,6 @@ type
   PNT_UNICODE_STRING = ^NT_UNICODE_STRING;
 
   // SYSTEM_PROCESS_INFORMATION - kernel process list entry.
-  // Each entry is followed by NumberOfThreads x SYSTEM_THREAD_INFORMATION,
-  // which we skip by using NextEntryOffset.
   SYSTEM_PROCESS_INFORMATION = record
     NextEntryOffset              : ULONG;
     NumberOfThreads              : ULONG;
@@ -263,7 +260,6 @@ function ResolveShortNameToFullPath(const ShortName: string): string;
 var
   SystemDir : string;
   SysWow64  : string;
-  Candidate : string;
   Buffer    : array[0..MAX_PATH] of Char;
   FilePart  : PChar;
   Len       : DWORD;
@@ -276,8 +272,7 @@ begin
   begin
     SetLength(SystemDir, MAX_PATH);
     SetLength(SystemDir, GetSystemDirectory(PChar(SystemDir), MAX_PATH));
-    Candidate := SystemDir + '\ntoskrnl.exe';
-    Result := Candidate;
+    Result := SystemDir + '\ntoskrnl.exe';
     Exit;
   end;
 
@@ -291,20 +286,17 @@ begin
     Exit;
   end;
 
-  // Explicit System32 check (SearchPath can miss it without SeDebugPrivilege
-  // on some configurations)
+  // Explicit System32 check (SearchPath can miss it without SeDebugPrivilege on some configurations)
   SetLength(SystemDir, MAX_PATH);
   SetLength(SystemDir, GetSystemDirectory(PChar(SystemDir), MAX_PATH));
-  Candidate := SystemDir + '\' + ShortName;
-  Result := Candidate;
+  Result := SystemDir + '\' + ShortName;
 
   // SysWOW64 for 32-bit processes running on 64-bit Windows
   SetLength(SysWow64, MAX_PATH);
   SetLength(SysWow64, GetSystemWow64Directory(PChar(SysWow64), MAX_PATH));
   if SysWow64 <> '' then
   begin
-    Candidate := SysWow64 + '\' + ShortName;
-    Result := Candidate;
+    Result := SysWow64 + '\' + ShortName;
   end;
 end;
 
@@ -340,64 +332,78 @@ end;
 // Public implementation
 // ---------------------------------------------------------------------------
 
-function GetAllImageNames : TDictionary<WORD, String>;
+// ---------------------------------------------------------------------------
+// GetAllFilePaths
+// ---------------------------------------------------------------------------
+
+function GetAllFilePaths : TDictionary<WORD, String>;
+const KB = 1024;
 var
   Status       : NTSTATUS;
   Buffer       : PByte;
   BufferSize   : ULONG;
   ReturnLength : ULONG;
   Entry        : PSYSTEM_PROCESS_INFORMATION;
-  ShortName    : string;
-
+  ImageName    : string;
 begin
   Result := TDictionary<WORD, String>.Create();
 
   EnsureNtApi;
   if not Assigned(_NtQuerySystemInformation) then Exit;
 
-  BufferSize := 512 * 1024;
+  BufferSize := 512 * KB;
   Buffer := AllocMem(BufferSize);
   try
-    repeat
+    while True do
+    begin
       ReturnLength := 0;
-      Status := _NtQuerySystemInformation(
-        SystemProcessInformation, Buffer, BufferSize, @ReturnLength);
-      if Status = STATUS_INFO_LENGTH_MISMATCH then
-      begin
-        FreeMem(Buffer);
-        BufferSize := ReturnLength + 8192;
-        Buffer := AllocMem(BufferSize);
-      end
-      else
+
+      Status := _NtQuerySystemInformation( SystemProcessInformation, Buffer, BufferSize, @ReturnLength);
+
+      if NT_SUCCESS(Status) then
         Break;
-    until False;
+
+      if Status <> STATUS_INFO_LENGTH_MISMATCH then
+        Exit; // raise error
+
+      FreeMem(Buffer);
+      BufferSize := ReturnLength + 8 * KB;
+      Buffer := AllocMem(BufferSize);
+    end;
 
     if not NT_SUCCESS(Status) then Exit;
 
     Entry := PSYSTEM_PROCESS_INFORMATION(Buffer);
-    repeat
 
+    while True do
+    begin
       if Entry^.ImageName.Length > 0 then
       begin
-        SetString(ShortName,
+        SetString(ImageName,
             Entry^.ImageName.Buffer,
             Entry^.ImageName.Length div SizeOf(WideChar));
 
-        if IsFileNameOnly(ShortName) then
-          Result.Add(Entry^.UniqueProcessId, ResolveShortNameToFullPath(ShortName))
+        if IsFileNameOnly(ImageName) then
+          Result.Add(Entry^.UniqueProcessId, ResolveShortNameToFullPath(ImageName))
         else
-          Result.Add(Entry^.UniqueProcessId, ShortName);
+          Result.Add(Entry^.UniqueProcessId, ImageName);
 
       end;
 
-      if Entry^.NextEntryOffset = 0 then Break;
+      if Entry^.NextEntryOffset = 0
+        then Break;
+
       Entry := PSYSTEM_PROCESS_INFORMATION(PByte(Entry) + Entry^.NextEntryOffset);
-    until False;
+    end;
   finally
     FreeMem(Buffer);
   end;
 
 end;
+
+// ---------------------------------------------------------------------------
+// GetProcessFilePath
+// ---------------------------------------------------------------------------
 
 function GetProcessFilePath(ProcessId: DWORD): string;
 var
@@ -429,6 +435,10 @@ begin
   end;
 
 end;
+
+// ---------------------------------------------------------------------------
+// QuerySessionID
+// ---------------------------------------------------------------------------
 
 function QuerySessionID(PID: DWORD): DWORD;
 var
