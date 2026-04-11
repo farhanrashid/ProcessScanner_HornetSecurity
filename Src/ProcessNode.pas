@@ -44,46 +44,56 @@ begin
 end;
 
 
+// ---------------------------------------------------------------------------
+// GetSnapshot
+// - The caller is fully responsible for freeing the returned TSnapshot object.
+// ---------------------------------------------------------------------------
+
 function GetSnapshot: TSnapshot;
 var
   hSnap  : THandle;
   pe32   : TProcessEntry32W;
   node   : TProcessNode;
   FilePath : String;
-  FilePaths : TDictionary<WORD, String>;
+  FilePaths : TDictionary<DWORD, String>;
 begin
   Result := TSnapshot.Create;
 
   // Try to enable debug privilege first (best effort - continues even if it fails)
   EnableDebugPrivilege;
 
-  FilePaths := GetAllFilePaths;
-
-  hSnap := CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-  if hSnap = INVALID_HANDLE_VALUE then
-    Exit;
   try
-    pe32.dwSize := SizeOf(pe32);
-    if not Process32FirstW(hSnap, pe32) then
+    FilePaths := GetAllFilePaths;
+
+    hSnap := CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if hSnap = INVALID_HANDLE_VALUE then
       Exit;
 
-    repeat
-      node := TProcessNode.Create;
-      node.ProcessInfo.PID       := pe32.th32ProcessID;
-      node.ProcessInfo.ParentPID := pe32.th32ParentProcessID;
-      node.ProcessInfo.ExeName   := ExtractFileName(pe32.szExeFile);
-      FilePath := GetProcessFilePath(pe32.th32ProcessID);
+    try
+      pe32.dwSize := SizeOf(pe32);
+      if not Process32FirstW(hSnap, pe32) then
+        Exit;
 
-      if (FilePath = '') then
-        FilePaths.TryGetValue(node.ProcessInfo.PID, FilePath);
+      repeat
+        node := TProcessNode.Create;
+        node.ProcessInfo.PID       := pe32.th32ProcessID;
+        node.ProcessInfo.ParentPID := pe32.th32ParentProcessID;
+        node.ProcessInfo.ExeName   := ExtractFileName(pe32.szExeFile);
+        FilePath := GetProcessFilePath(pe32.th32ProcessID);
 
-      node.ProcessInfo.ExePath   := FilePath;
-      node.ProcessInfo.SessionID := QuerySessionID(pe32.th32ProcessID);
+        if (FilePath = '') then
+          FilePaths.TryGetValue(node.ProcessInfo.PID, FilePath);
 
-      Result.Add(node.ProcessInfo.PID, node);
-    until not Process32NextW(hSnap, pe32);
+        node.ProcessInfo.ExePath   := FilePath;
+        node.ProcessInfo.SessionID := QuerySessionID(pe32.th32ProcessID);
+
+        Result.Add(node.ProcessInfo.PID, node);
+      until not Process32NextW(hSnap, pe32);
+    finally
+      CloseHandle(hSnap);
+    end;
+
   finally
-    CloseHandle(hSnap);
     FilePaths.Free;
   end;
 end;

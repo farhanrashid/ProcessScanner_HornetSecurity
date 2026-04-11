@@ -9,7 +9,7 @@ uses Windows, SysUtils, System.Generics.Collections;
 // ---------------------------------------------------------------------------
 
 function EnableDebugPrivilege: Boolean;
-function GetAllFilePaths : TDictionary<WORD, String>; // All PID -> File path
+function GetAllFilePaths : TDictionary<DWORD, String>; // All PID -> File path
 function GetProcessFilePath(ProcessId: DWORD): string;
 function QuerySessionID(PID: DWORD): DWORD;
 
@@ -336,7 +336,7 @@ end;
 // GetAllFilePaths
 // ---------------------------------------------------------------------------
 
-function GetAllFilePaths : TDictionary<WORD, String>;
+function GetAllFilePaths : TDictionary<DWORD, String>;
 const KB = 1024;
 var
   Status       : NTSTATUS;
@@ -346,7 +346,7 @@ var
   Entry        : PSYSTEM_PROCESS_INFORMATION;
   ImageName    : string;
 begin
-  Result := TDictionary<WORD, String>.Create();
+  Result := TDictionary<DWORD, String>.Create();
 
   EnsureNtApi;
   if not Assigned(_NtQuerySystemInformation) then Exit;
