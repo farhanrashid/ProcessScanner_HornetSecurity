@@ -39,9 +39,9 @@ object frmMain: TfrmMain
     object btnRefresh: TButton
       Left = 848
       Top = 10
-      Width = 75
+      Width = 100
       Height = 25
-      Caption = 'Refresh'
+      Caption = 'Refresh Now'
       TabOrder = 2
       OnClick = btnRefreshClick
     end
@@ -123,5 +123,10 @@ object frmMain: TfrmMain
       ScrollBars = ssVertical
       TabOrder = 0
     end
+  end
+  object CountdownTimer: TTimer
+    OnTimer = CountdownTimerTimer
+    Left = 664
+    Top = 8
   end
 end
