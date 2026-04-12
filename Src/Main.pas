@@ -37,6 +37,8 @@ type
     FRootNode : TProcessNode;
     FinRefresh : Boolean;
     FCountdown : Integer;
+    FScanResults : TDictionary<string, TScanResult>;
+
     procedure Refresh;
     procedure RebuildTreeView(aOldSnapshot: TSnapshot; aOldRootNode: TProcessNode);
     procedure PopulateNode(ParentItem: TTreeNode; Node: TProcessNode);
@@ -142,6 +144,7 @@ procedure TfrmMain.RebuildTreeView(aOldSnapshot: TSnapshot; aOldRootNode: TProce
 var
   node: TProcessNode;
   pid : DWORD;
+  sr : TScanResult;
 begin
   tvProcesses.Items.BeginUpdate;
   tvProcesses.Enabled := False;
@@ -171,9 +174,10 @@ begin
     //update Scan Result
     for Node in FSnapshot.Values do
     begin
-      //TODO : new dictionary
-      if Node.ExeName = 'plugin_host-3.8.exe' then
-        Node.ScanResult := srFound;
+      if Node.ExePath = '' then
+        Node.ScanResult := srAccessDenied
+      else if FScanResults.TryGetValue(Node.ExePath, sr) then
+        Node.ScanResult := sr;
     end;
 
   finally
@@ -230,6 +234,10 @@ procedure TfrmMain.FormCreate(Sender: TObject);
 begin
   FSnapshot := Nil;
   FRootNode := Nil;
+  FScanResults := TDictionary<string, TScanResult>.Create;
+  //TODO : Load from DB or persistent storage
+  FScanResults.Add('C:\Program Files\Sublime Text\plugin_host-3.8.exe', srFound);
+
   FinRefresh := False;
   Refresh;
 end;
@@ -237,7 +245,8 @@ end;
 procedure TfrmMain.FormDestroy(Sender: TObject);
 begin
   if Assigned(FSnapshot) then FSnapshot.Free;
-  FRootNode.Free;
+  if Assigned(FRootNode) then FRootNode.Free;
+  FScanResults.Free;
 end;
 
 procedure TfrmMain.AddLog(aMessage : string);
