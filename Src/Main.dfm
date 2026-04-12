@@ -21,12 +21,13 @@ object frmMain: TfrmMain
     Align = alTop
     TabOrder = 0
     object cbSystemProcess: TCheckBox
-      Left = 110
+      Left = 130
       Top = 10
       Width = 129
       Height = 17
-      Caption = 'System Processes'
+      Caption = 'System processes'
       Checked = True
+      Enabled = False
       State = cbChecked
       TabOrder = 0
     end
@@ -37,6 +38,7 @@ object frmMain: TfrmMain
       Height = 17
       Caption = 'Process from other users'
       Checked = True
+      Enabled = False
       State = cbChecked
       TabOrder = 1
     end

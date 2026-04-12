@@ -36,10 +36,12 @@ type
     FinRefresh : Boolean;
     FCountdown : Integer;
     procedure Refresh;
-    procedure RebuildTreeView;
+    procedure RebuildTreeView(aOldSnapshot: TSnapshot; aOldRootNode: TProcessNode);
     procedure PopulateNode(ParentItem: TTreeNode; Node: TProcessNode);
+    procedure PopulateNewNode(aNewNode, aOldNode: TProcessNode);
   public
     { Public declarations }
+    procedure AddLog(aMessage : string);
   end;
 
 var
@@ -75,16 +77,16 @@ begin
 
     for node in FSnapshot.Values do
     begin
-      //memoLog.Lines.Add(node.ExeName + '=' + node.PID.ToString + '=' + node.ParentPID.ToString);
+      //AddLog(node.ExeName + '=' + node.PID.ToString + '=' + node.ParentPID.ToString);
 
       if (node.PID = 0) or not FSnapshot.TryGetValue(node.ParentPID, Parent) then
         Parent := FRootNode;
 
       Parent.Childs.Add(node.PID, node);
-
+      node.ParentNode := Parent;
     end;
 
-    RebuildTreeView;
+    RebuildTreeView(oldSnapshot, oldRootNode);
 
   finally
     if Assigned(oldSnapshot) then oldSnapshot.Free;
@@ -115,17 +117,57 @@ begin
   end;
 end;
 
-procedure TfrmMain.RebuildTreeView;
+procedure TfrmMain.RebuildTreeView(aOldSnapshot: TSnapshot; aOldRootNode: TProcessNode);
 var
   node: TProcessNode;
+  pid : DWORD;
 begin
   tvProcesses.Items.BeginUpdate;
+
   try
-    tvProcesses.Items.Clear;
-    for node in FRootNode.Childs.Values do
-      PopulateNode(nil, node);
+    if not Assigned(aOldSnapshot) or not Assigned(aOldRootNode) then
+    begin
+      tvProcesses.Items.Clear;
+      for node in FRootNode.Childs.Values do
+        PopulateNode(nil, node);
+    end
+    else
+    begin
+
+      for pid in aOldSnapshot.Keys do
+      begin
+        if not FSnapshot.TryGetValue(pid, node) then  // delete killed/gone processes
+          aOldSnapshot[pid].TreeNode.Delete
+        else
+        begin    // update retained processes
+          //TODO : if match file path
+          // copy all staus aOldSnapshot[pid] -> node
+          node.TreeNode := aOldSnapshot[pid].TreeNode;
+        end;
+      end;
+
+     //Add only new nodes
+      PopulateNewNode(FRootNode, aOldRootNode);
+
+    end;
+
   finally
     tvProcesses.Items.EndUpdate;
+  end;
+
+end;
+
+procedure TfrmMain.PopulateNewNode(aNewNode, aOldNode: TProcessNode);
+var
+  node: TProcessNode;
+  pid : DWORD;
+begin
+  for pid in aNewNode.Childs.Keys do
+  begin
+    if not aOldNode.Childs.TryGetValue(pid, node) then  //add new
+      PopulateNode(aNewNode.Childs[pid].ParentNode.TreeNode, aNewNode.Childs[pid])
+    else
+      PopulateNewNode(aNewNode.Childs[pid], node);
   end;
 end;
 
@@ -139,8 +181,12 @@ begin
   else
     item := tvProcesses.Items.AddChildObject(ParentItem, Node.ExeName, Pointer(NativeUInt(Node.PID)));
 
+  Node.TreeNode := item;
+
   for child in Node.Childs.Values do
     PopulateNode(item, child);
+
+  item.Expanded := True;//(Node.ExeName <> 'services.exe') or (Node.Childs.Count < 20); //dont expand service by default
 end;
 
 procedure TfrmMain.CountdownTimerTimer(Sender: TObject);
@@ -165,6 +211,11 @@ procedure TfrmMain.FormDestroy(Sender: TObject);
 begin
   if Assigned(FSnapshot) then FSnapshot.Free;
   FRootNode.Free;
+end;
+
+procedure TfrmMain.AddLog(aMessage : string);
+begin
+  memoLog.Lines.Add(FormatDateTime('yyyy-mm-dd hh:nn:ss', Now) + ' - ' + aMessage);
 end;
 
 end.

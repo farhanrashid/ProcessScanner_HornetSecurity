@@ -3,7 +3,7 @@ unit ProcessNode;
 interface
 
 uses
-  System.Classes, System.Types, System.Generics.Collections;
+  System.Classes, System.Types, System.Generics.Collections, Vcl.ComCtrls;
 
 type
 
@@ -17,7 +17,8 @@ type
     ExeName    : string;   // file name only
     ExePath    : string;   // full path
     SessionID  : DWORD;
-
+    TreeNode   : TTreeNode;
+    ParentNode : TProcessNode;
     Childs   : TSnapshot;
     constructor Create;
     destructor Destroy; override;
@@ -32,6 +33,7 @@ uses Windows, TLHelp32, System.SysUtils, WinUtils;
 constructor TProcessNode.Create;
 begin
   inherited;
+  ParentNode := Nil;
   Childs := TSnapshot.Create; // dont own objects
 end;
 
