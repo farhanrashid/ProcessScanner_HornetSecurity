@@ -29,6 +29,8 @@ type
     procedure btnRefreshClick(Sender: TObject);
     procedure CountdownTimerTimer(Sender: TObject);
     procedure tvProcessesChange(Sender: TObject; Node: TTreeNode);
+    procedure tvProcessesCustomDrawItem(Sender: TCustomTreeView;
+      Node: TTreeNode; State: TCustomDrawState; var DefaultDraw: Boolean);
   private
     { Private declarations }
     FSnapshot : TSnapshot;
@@ -84,6 +86,7 @@ begin
 
       Parent.Childs.Add(node.PID, node);
       node.ParentNode := Parent;
+
     end;
 
     RebuildTreeView(oldSnapshot, oldRootNode);
@@ -109,11 +112,29 @@ begin
 
   if FSnapshot.TryGetValue(pid, ProcessNode) then
   begin
-    //ShowMessage(ProcessNode.ExePath);
     lvDetails.Items[0].SubItems[0] := ProcessNode.ExePath;
     lvDetails.Items[1].SubItems[0] := ProcessNode.PID.ToString;
     lvDetails.Items[2].SubItems[0] := ProcessNode.SessionID.ToString;
 
+  end;
+end;
+
+procedure TfrmMain.tvProcessesCustomDrawItem(Sender: TCustomTreeView;
+  Node: TTreeNode; State: TCustomDrawState; var DefaultDraw: Boolean);
+var
+  pid : DWORD;
+  ProcessNode: TProcessNode;
+begin
+
+  pid := DWORD(NativeUInt(Node.Data));
+  if FSnapshot.TryGetValue(pid, ProcessNode) then
+  begin
+    if ProcessNode.IsScanFound then
+      Sender.Canvas.Font.Color := clBlue
+    else if ProcessNode.ScanResult = srNotFound then
+      Sender.Canvas.Font.Color := clRed
+    else if ProcessNode.ScanResult = srAccessDenied then
+      Sender.Canvas.Font.Color := clGreen;
   end;
 end;
 
@@ -123,15 +144,15 @@ var
   pid : DWORD;
 begin
   tvProcesses.Items.BeginUpdate;
-
+  tvProcesses.Enabled := False;
   try
-    if not Assigned(aOldSnapshot) or not Assigned(aOldRootNode) then
+    if not Assigned(aOldSnapshot) or not Assigned(aOldRootNode) then  //first run
     begin
       tvProcesses.Items.Clear;
       for node in FRootNode.Childs.Values do
         PopulateNode(nil, node);
     end
-    else
+    else  //successive refresh
     begin
 
       for pid in aOldSnapshot.Keys do
@@ -139,19 +160,24 @@ begin
         if not FSnapshot.TryGetValue(pid, node) then  // delete killed/gone processes
           aOldSnapshot[pid].TreeNode.Delete
         else
-        begin    // update retained processes
-          //TODO : if match file path
-          // copy all staus aOldSnapshot[pid] -> node
-          node.TreeNode := aOldSnapshot[pid].TreeNode;
-        end;
+          node.TreeNode := aOldSnapshot[pid].TreeNode; // update retained processes
       end;
 
-     //Add only new nodes
+      //Add only new nodes
       PopulateNewNode(FRootNode, aOldRootNode);
 
     end;
 
+    //update Scan Result
+    for Node in FSnapshot.Values do
+    begin
+      //TODO : new dictionary
+      if Node.ExeName = 'plugin_host-3.8.exe' then
+        Node.ScanResult := srFound;
+    end;
+
   finally
+    tvProcesses.Enabled := True;
     tvProcesses.Items.EndUpdate;
   end;
 
@@ -187,6 +213,7 @@ begin
     PopulateNode(item, child);
 
   item.Expanded := True;//(Node.ExeName <> 'services.exe') or (Node.Childs.Count < 20); //dont expand service by default
+
 end;
 
 procedure TfrmMain.CountdownTimerTimer(Sender: TObject);

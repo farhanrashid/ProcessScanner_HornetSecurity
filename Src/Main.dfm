@@ -77,6 +77,7 @@ object frmMain: TfrmMain
       Indent = 19
       TabOrder = 0
       OnChange = tvProcessesChange
+      OnCustomDrawItem = tvProcessesCustomDrawItem
     end
   end
   object pnlDetails: TPanel

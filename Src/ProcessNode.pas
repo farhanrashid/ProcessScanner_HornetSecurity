@@ -6,20 +6,40 @@ uses
   System.Classes, System.Types, System.Generics.Collections, Vcl.ComCtrls;
 
 type
+  TScanResult = (
+    srPending,       // Not yet analysed
+    srFound,         // "https://" found inside the file
+    srNotFound,      // File was read; "https://" not present
+    srAccessDenied   // File could not be opened / read
+  );
 
   TProcessNode = class;   //forward declararion
   TSnapshot = TObjectDictionary<DWORD, TProcessNode>; // PID -> ProcessNode
 
   TProcessNode = class
+  private
+    FScanResult        : TScanResult;
+    FScanFoundInChild  : Boolean;  //Keep Track of srFound in Childs
+
+    procedure SetScanResult(aValue : TScanResult);
+    procedure SetScanFoundInChild(aValue : Boolean);
   public
-    PID        : DWORD;
-    ParentPID  : DWORD;
-    ExeName    : string;   // file name only
-    ExePath    : string;   // full path
-    SessionID  : DWORD;
-    TreeNode   : TTreeNode;
-    ParentNode : TProcessNode;
+    PID               : DWORD;
+    ParentPID         : DWORD;
+    ExeName           : string;   // file name only
+    ExePath           : string;   // full path
+    SessionID         : DWORD;
+    TreeNode          : TTreeNode;
+    ParentNode        : TProcessNode;
+
+
     Childs   : TSnapshot;
+
+    function IsScanFound: Boolean;
+
+    property ScanResult: TScanResult read FScanResult write SetScanResult;
+    property ScanFoundInChild: Boolean read FScanFoundInChild write SetScanFoundInChild;
+
     constructor Create;
     destructor Destroy; override;
   end;
@@ -34,6 +54,8 @@ constructor TProcessNode.Create;
 begin
   inherited;
   ParentNode := Nil;
+  ScanResult := srPending;
+  ScanFoundInChild := False;
   Childs := TSnapshot.Create; // dont own objects
 end;
 
@@ -43,6 +65,32 @@ begin
   inherited;
 end;
 
+procedure TProcessNode.SetScanResult(aValue : TScanResult);
+begin
+  if (aValue = srFound) and (FScanResult <> srFound) then
+  begin
+    if Assigned(ParentNode) then
+      ParentNode.ScanFoundInChild := True;
+  end;
+
+  FScanResult := aValue;
+end;
+
+procedure TProcessNode.SetScanFoundInChild(aValue : Boolean);
+begin
+  if aValue and not FScanFoundInChild then
+  begin
+    if Assigned(ParentNode) then
+      ParentNode.ScanFoundInChild := True;
+  end;
+
+  FScanFoundInChild := aValue;
+end;
+
+function TProcessNode.IsScanFound: Boolean;
+begin
+  Result := (ScanResult = srFound) or ScanFoundInChild;
+end;
 
 // ---------------------------------------------------------------------------
 // GetSnapshot
