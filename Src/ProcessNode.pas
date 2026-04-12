@@ -132,7 +132,7 @@ begin
         if (FilePath = '') then
           FilePaths.TryGetValue(node.PID, FilePath);
 
-        node.ExePath   := FilePath;
+        node.ExePath   := UpperCase(FilePath);
         node.SessionID := QuerySessionID(pe32.th32ProcessID);
 
         Result.Add(node.PID, node);

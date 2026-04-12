@@ -4,7 +4,8 @@ uses
   Vcl.Forms,
   Main in 'Src\Main.pas' {frmMain},
   ProcessNode in 'Src\ProcessNode.pas',
-  WinUtils in 'Src\WinUtils.pas';
+  WinUtils in 'Src\WinUtils.pas',
+  FileSearchWorker in 'Src\FileSearchWorker.pas';
 
 {$R *.res}
 

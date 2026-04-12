@@ -5,7 +5,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ExtCtrls, Vcl.StdCtrls, Vcl.ComCtrls,
-  System.Types, System.Generics.Collections, ProcessNode;
+  System.Types, System.Generics.Collections, ProcessNode, FileSearchWorker;
 
 type
 
@@ -17,13 +17,14 @@ type
     memoLog: TMemo;
     lblLog: TLabel;
     lblDetails: TLabel;
-    Label1: TLabel;
+    lvlProcesses: TLabel;
     tvProcesses: TTreeView;
     cbSystemProcess: TCheckBox;
     cbProcessOtherUsers: TCheckBox;
     lvDetails: TListView;
     btnRefresh: TButton;
     CountdownTimer: TTimer;
+    SplitterLog: TSplitter;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure btnRefreshClick(Sender: TObject);
@@ -31,18 +32,22 @@ type
     procedure tvProcessesChange(Sender: TObject; Node: TTreeNode);
     procedure tvProcessesCustomDrawItem(Sender: TCustomTreeView;
       Node: TTreeNode; State: TCustomDrawState; var DefaultDraw: Boolean);
+    procedure FormClose(Sender: TObject; var Action: TCloseAction);
   private
     { Private declarations }
     FSnapshot : TSnapshot;
     FRootNode : TProcessNode;
     FinRefresh : Boolean;
     FCountdown : Integer;
-    FScanResults : TDictionary<string, TScanResult>;
+    FScanResults : TDictionary<string, TScanResult>;   //File Path -> Result
+    FWorkers : TObjectDictionary<string, TFileSearchWorker>; // File path -> Worker
 
     procedure Refresh;
     procedure RebuildTreeView(aOldSnapshot: TSnapshot; aOldRootNode: TProcessNode);
     procedure PopulateNode(ParentItem: TTreeNode; Node: TProcessNode);
     procedure PopulateNewNode(aNewNode, aOldNode: TProcessNode);
+
+    procedure SearchDone(aExePath: string; aResult: TScanResult);
   public
     { Public declarations }
     procedure AddLog(aMessage : string);
@@ -145,6 +150,7 @@ var
   node: TProcessNode;
   pid : DWORD;
   sr : TScanResult;
+  Worker : TFileSearchWorker;
 begin
   tvProcesses.Items.BeginUpdate;
   tvProcesses.Enabled := False;
@@ -177,7 +183,18 @@ begin
       if Node.ExePath = '' then
         Node.ScanResult := srAccessDenied
       else if FScanResults.TryGetValue(Node.ExePath, sr) then
+      begin
         Node.ScanResult := sr;
+        //TODO make list of found file path, then request cancel to dispeared paths at the end
+      end
+      else
+      begin  // create entry in results and new Worker for search
+        FScanResults.Add(Node.ExePath, srPending);
+        Worker := TFileSearchWorker.Create(Node.ExePath, SearchDone);
+        FWorkers.Add(Node.ExePath, Worker);
+        //Worker.Start;
+        AddLog('Scan strated ' + Node.ExePath);
+      end;
     end;
 
   finally
@@ -185,6 +202,12 @@ begin
     tvProcesses.Items.EndUpdate;
   end;
 
+end;
+
+procedure TfrmMain.SearchDone(aExePath: string; aResult: TScanResult);
+begin
+  FScanResults[aExePath] := aResult;
+  FWorkers.Remove(aExePath);
 end;
 
 procedure TfrmMain.PopulateNewNode(aNewNode, aOldNode: TProcessNode);
@@ -230,6 +253,11 @@ begin
 
 end;
 
+procedure TfrmMain.FormClose(Sender: TObject; var Action: TCloseAction);
+begin
+  // TODO FWorkers  request Cancel  .WaitFor;
+end;
+
 procedure TfrmMain.FormCreate(Sender: TObject);
 begin
   FSnapshot := Nil;
@@ -238,15 +266,20 @@ begin
   //TODO : Load from DB or persistent storage
   FScanResults.Add('C:\Program Files\Sublime Text\plugin_host-3.8.exe', srFound);
 
+  FWorkers := TObjectDictionary<string, TFileSearchWorker>.Create([doOwnsValues]);
+
   FinRefresh := False;
   Refresh;
 end;
 
 procedure TfrmMain.FormDestroy(Sender: TObject);
 begin
+
   if Assigned(FSnapshot) then FSnapshot.Free;
   if Assigned(FRootNode) then FRootNode.Free;
   FScanResults.Free;
+
+  FWorkers.Free;
 end;
 
 procedure TfrmMain.AddLog(aMessage : string);

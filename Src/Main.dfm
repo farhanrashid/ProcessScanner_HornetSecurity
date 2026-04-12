@@ -3,23 +3,34 @@ object frmMain: TfrmMain
   Top = 0
   Caption = 'Task Manager'
   ClientHeight = 695
-  ClientWidth = 962
+  ClientWidth = 1284
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -12
   Font.Name = 'Segoe UI'
   Font.Style = []
+  OnClose = FormClose
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   TextHeight = 15
+  object SplitterLog: TSplitter
+    Left = 381
+    Top = 41
+    Height = 535
+    Align = alRight
+    ExplicitLeft = 312
+    ExplicitTop = 208
+    ExplicitHeight = 100
+  end
   object pnlSettings: TPanel
     Left = 0
     Top = 0
-    Width = 962
+    Width = 1284
     Height = 41
     Align = alTop
     TabOrder = 0
+    ExplicitWidth = 962
     object cbSystemProcess: TCheckBox
       Left = 130
       Top = 10
@@ -55,14 +66,15 @@ object frmMain: TfrmMain
   object pnlMain: TPanel
     Left = 0
     Top = 41
-    Width = 344
+    Width = 381
     Height = 535
     Align = alClient
     TabOrder = 1
-    object Label1: TLabel
+    ExplicitWidth = 344
+    object lvlProcesses: TLabel
       Left = 1
       Top = 1
-      Width = 342
+      Width = 379
       Height = 15
       Align = alTop
       Caption = 'Processes'
@@ -71,26 +83,28 @@ object frmMain: TfrmMain
     object tvProcesses: TTreeView
       Left = 1
       Top = 16
-      Width = 342
+      Width = 379
       Height = 518
       Align = alClient
       Indent = 19
       TabOrder = 0
       OnChange = tvProcessesChange
       OnCustomDrawItem = tvProcessesCustomDrawItem
+      ExplicitWidth = 342
     end
   end
   object pnlDetails: TPanel
     Left = 0
     Top = 576
-    Width = 962
+    Width = 1284
     Height = 119
     Align = alBottom
     TabOrder = 2
+    ExplicitWidth = 962
     object lblDetails: TLabel
       Left = 1
       Top = 1
-      Width = 960
+      Width = 1282
       Height = 15
       Align = alTop
       Caption = 'Process Details'
@@ -99,7 +113,7 @@ object frmMain: TfrmMain
     object lvDetails: TListView
       Left = 1
       Top = 16
-      Width = 960
+      Width = 1282
       Height = 102
       Align = alClient
       Columns = <
@@ -120,19 +134,21 @@ object frmMain: TfrmMain
         FFFFFF}
       TabOrder = 0
       ViewStyle = vsReport
+      ExplicitWidth = 960
     end
   end
   object pnlLog: TPanel
-    Left = 344
+    Left = 384
     Top = 41
-    Width = 618
+    Width = 900
     Height = 535
     Align = alRight
     TabOrder = 3
+    ExplicitLeft = 284
     object lblLog: TLabel
       Left = 1
       Top = 1
-      Width = 616
+      Width = 898
       Height = 15
       Align = alTop
       Caption = 'Log'
@@ -141,11 +157,12 @@ object frmMain: TfrmMain
     object memoLog: TMemo
       Left = 1
       Top = 16
-      Width = 616
+      Width = 898
       Height = 518
       Align = alClient
       ScrollBars = ssVertical
       TabOrder = 0
+      ExplicitWidth = 616
     end
   end
   object CountdownTimer: TTimer
