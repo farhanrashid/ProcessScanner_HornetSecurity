@@ -48,6 +48,8 @@ type
     procedure PopulateNewNode(aNewNode, aOldNode: TProcessNode);
 
     procedure SearchDone(aExePath: string; aResult: TScanResult);
+    procedure SaveResultsToFile;
+    procedure LoadResultsFromFile;
   public
     { Public declarations }
     procedure AddLog(aMessage : string);
@@ -59,8 +61,13 @@ var
 implementation
 
 {$R *.dfm}
+
+uses System.JSON, System.IOUtils;
+
 const
   COUNTDOWN_START = 10;
+
+  ResultsFile = 'results.json';
 
 procedure TfrmMain.btnRefreshClick(Sender: TObject);
 begin
@@ -190,6 +197,10 @@ begin
       else
       begin  // create entry in results and new Worker for search
         FScanResults.Add(Node.ExePath, srPending);
+      end;
+
+      if (Node.ExePath <> '') and (FScanResults[Node.ExePath] = srPending) and not FWorkers.ContainsKey(Node.ExePath) then
+      begin
         Worker := TFileSearchWorker.Create(Node.ExePath, SearchDone);
         FWorkers.Add(Node.ExePath, Worker);
         //Worker.Start;
@@ -256,6 +267,7 @@ end;
 procedure TfrmMain.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   // TODO FWorkers  request Cancel  .WaitFor;
+  SaveResultsToFile;
 end;
 
 procedure TfrmMain.FormCreate(Sender: TObject);
@@ -264,7 +276,8 @@ begin
   FRootNode := Nil;
   FScanResults := TDictionary<string, TScanResult>.Create;
   //TODO : Load from DB or persistent storage
-  FScanResults.Add('C:\Program Files\Sublime Text\plugin_host-3.8.exe', srFound);
+  //FScanResults.Add('C:\Program Files\Sublime Text\plugin_host-3.8.exe', srFound);
+  LoadResultsFromFile;
 
   FWorkers := TObjectDictionary<string, TFileSearchWorker>.Create([doOwnsValues]);
 
@@ -285,6 +298,41 @@ end;
 procedure TfrmMain.AddLog(aMessage : string);
 begin
   memoLog.Lines.Add(FormatDateTime('yyyy-mm-dd hh:nn:ss', Now) + ' - ' + aMessage);
+end;
+
+
+procedure TfrmMain.SaveResultsToFile;
+var
+  JSONObj: TJSONObject;
+  Pair: TPair<string, TScanResult>;
+begin
+  JSONObj := TJSONObject.Create;
+  try
+    for Pair in FScanResults do
+      JSONObj.AddPair(Pair.Key, TJSONNumber.Create(Integer(Pair.Value)));
+
+    TFile.WriteAllText(ResultsFile, JSONObj.ToJSON);
+  finally
+    JSONObj.Free;
+  end;
+end;
+
+procedure TfrmMain.LoadResultsFromFile;
+var
+  JSONObj: TJSONObject;
+  Pair: TJSONPair;
+begin
+
+  if not TFile.Exists(ResultsFile) then
+    Exit;
+
+  JSONObj := TJSONObject.ParseJSONValue(TFile.ReadAllText(ResultsFile)) as TJSONObject;
+  try
+    for Pair in JSONObj do
+      FScanResults.Add(Pair.JsonString.Value, TScanResult(StrToInt(Pair.JsonValue.Value)));
+  finally
+    JSONObj.Free;
+  end;
 end;
 
 end.
