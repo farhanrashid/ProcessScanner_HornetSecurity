@@ -41,6 +41,7 @@ type
     FCountdown : Integer;
     FScanResults : TDictionary<string, TScanResult>;   //File Path -> Result
     FWorkers : TObjectDictionary<string, TFileSearchWorker>; // File path -> Worker
+    FCurrentSessionID : DWORD;
 
     procedure Refresh;
     procedure RebuildTreeView(aOldSnapshot: TSnapshot; aOldRootNode: TProcessNode);
@@ -160,7 +161,6 @@ var
   Worker : TFileSearchWorker;
 begin
   tvProcesses.Items.BeginUpdate;
-  tvProcesses.Enabled := False;
   try
     if not Assigned(aOldSnapshot) or not Assigned(aOldRootNode) then  //first run
     begin
@@ -209,7 +209,6 @@ begin
     end;
 
   finally
-    tvProcesses.Enabled := True;
     tvProcesses.Items.EndUpdate;
   end;
 
@@ -250,7 +249,7 @@ begin
   for child in Node.Childs.Values do
     PopulateNode(item, child);
 
-  item.Expanded := True;//(Node.ExeName <> 'services.exe') or (Node.Childs.Count < 20); //dont expand service by default
+  item.Expanded := Node.SessionID = FCurrentSessionID;  // expand only current user process
 
 end;
 
@@ -271,7 +270,13 @@ begin
 end;
 
 procedure TfrmMain.FormCreate(Sender: TObject);
+  function GetCurrentSessionID: DWORD;
+  begin
+    Result := 0;
+    ProcessIdToSessionId(GetCurrentProcessId, Result);
+  end;
 begin
+  FCurrentSessionID := GetCurrentSessionID;
   FSnapshot := Nil;
   FRootNode := Nil;
   FScanResults := TDictionary<string, TScanResult>.Create;

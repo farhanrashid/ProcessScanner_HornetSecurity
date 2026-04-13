@@ -330,17 +330,21 @@ var
 begin
   Result := '';
   if ProcessId = 0 then Exit;
+
   ZeroMemory(@Info, SizeOf(Info));
   Info.ProcessId           := ProcessId;
   Info.ImageName.Length    := 0;
   Info.ImageName.MaximumLength := MAX_PATH * SizeOf(WideChar);
   Info.ImageName.Buffer    := @Buf[0];
   Status := _NtQuerySystemInformation( SystemProcessIdInformation,  @Info,  SizeOf(Info),  nil);
+
   if NT_SUCCESS(Status) and (Info.ImageName.Length > 0) then
     SetString(Result,
       Info.ImageName.Buffer,
       Info.ImageName.Length div SizeOf(WideChar));
-  Result := NativePathToWin32Path(Result);
+
+  if Result <> '' then
+    Result := NativePathToWin32Path(Result);
 end;
 
 // ---------------------------------------------------------------------------
