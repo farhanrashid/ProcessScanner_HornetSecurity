@@ -33,6 +33,11 @@ const
 
   STATUS_INFO_LENGTH_MISMATCH = NTSTATUS($C0000004);
 
+var
+  CachedSystemDir   : string;
+  CachedSysWow64Dir : string;
+  PathCache: TDictionary<String, String>;
+
 type
   NTSTATUS = LongInt;
 
@@ -80,6 +85,7 @@ type
     WriteTransferCount           : LARGE_INTEGER;
     OtherTransferCount           : LARGE_INTEGER;
   end;
+
   PSYSTEM_PROCESS_INFORMATION = ^SYSTEM_PROCESS_INFORMATION;
 
   TNtQueryInformationProcess = function(
@@ -96,11 +102,6 @@ type
     SystemInformationLength: ULONG;
     ReturnLength           : PULONG
   ): NTSTATUS; stdcall;
-
-var
-  CachedSystemDir   : string;
-  CachedSysWow64Dir : string;
-  PathCache: TDictionary<String, String>;
 
 function NT_SUCCESS(Status: NTSTATUS): Boolean; inline;
 begin
@@ -129,22 +130,6 @@ begin
   if H = 0 then Exit;
   @_NtQueryInformationProcess := GetProcAddress(H, 'NtQueryInformationProcess');
   @_NtQuerySystemInformation  := GetProcAddress(H, 'NtQuerySystemInformation');
-end;
-
-
-procedure InitPathCache;
-var
-  Buf : array[0..MAX_PATH] of Char;
-begin
-  if GetSystemDirectory(Buf, MAX_PATH) > 0 then
-    CachedSystemDir := Buf;
-
-  if GetSystemWow64Directory(Buf, MAX_PATH) > 0 then
-    CachedSysWow64Dir := Buf
-  else
-    CachedSysWow64Dir := '';  // 32-bit OS, no WOW64
-
-  PathCache := TDictionary<String, String>.Create;
 end;
 
 // ---------------------------------------------------------------------------
@@ -464,6 +449,25 @@ begin
     end;
   end;
 
+end;
+
+// ---------------------------------------------------------------------------
+// Initialization / Finalization
+// ---------------------------------------------------------------------------
+
+procedure InitPathCache;
+var
+  Buf : array[0..MAX_PATH] of Char;
+begin
+  if GetSystemDirectory(Buf, MAX_PATH) > 0 then
+    CachedSystemDir := Buf;
+
+  if GetSystemWow64Directory(Buf, MAX_PATH) > 0 then
+    CachedSysWow64Dir := Buf
+  else
+    CachedSysWow64Dir := '';  // 32-bit OS, no WOW64
+
+  PathCache := TDictionary<String, String>.Create;
 end;
 
 initialization
