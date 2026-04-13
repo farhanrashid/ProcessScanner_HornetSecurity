@@ -148,33 +148,6 @@ begin
 end;
 
 // ---------------------------------------------------------------------------
-// SeDebugPrivilege
-// ---------------------------------------------------------------------------
-
-function EnableDebugPrivilege: Boolean;
-var
-  hToken: THandle;
-  Luid  : TLargeInteger;
-  TP    : TOKEN_PRIVILEGES;
-  ReturnLength: DWORD;
-begin
-  Result := False;
-  if not OpenProcessToken(GetCurrentProcess, TOKEN_ADJUST_PRIVILEGES or TOKEN_QUERY, hToken) then
-    Exit;
-  try
-    if not LookupPrivilegeValue(nil, 'SeDebugPrivilege', Luid) then Exit;
-    TP.PrivilegeCount           := 1;
-    TP.Privileges[0].Luid       := Luid;
-    TP.Privileges[0].Attributes := SE_PRIVILEGE_ENABLED;
-
-    Result := AdjustTokenPrivileges(hToken, False, TP, SizeOf(TP), nil, ReturnLength)
-              and (GetLastError = ERROR_SUCCESS);
-  finally
-    CloseHandle(hToken);
-  end;
-end;
-
-// ---------------------------------------------------------------------------
 // Device prefix table  (\Device\HarddiskVolumeX -> C:)
 // ---------------------------------------------------------------------------
 
@@ -316,7 +289,6 @@ begin
       Result := CachedSysWow64Dir + '\' + ShortName;
       if FileExists(Result) then Exit;
     end;
-
     Result := CachedSystemDir + '\' + ShortName;
     if not FileExists(Result) then
       Result := '';   // don't return a path that doesn't exist
@@ -357,6 +329,33 @@ end;
 // ---------------------------------------------------------------------------
 // Public implementation
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// EnableDebugPrivilege
+// ---------------------------------------------------------------------------
+
+function EnableDebugPrivilege: Boolean;
+var
+  hToken: THandle;
+  Luid  : TLargeInteger;
+  TP    : TOKEN_PRIVILEGES;
+  ReturnLength: DWORD;
+begin
+  Result := False;
+  if not OpenProcessToken(GetCurrentProcess, TOKEN_ADJUST_PRIVILEGES or TOKEN_QUERY, hToken) then
+    Exit;
+  try
+    if not LookupPrivilegeValue(nil, SE_DEBUG_NAME, Luid) then Exit;
+    TP.PrivilegeCount           := 1;
+    TP.Privileges[0].Luid       := Luid;
+    TP.Privileges[0].Attributes := SE_PRIVILEGE_ENABLED;
+
+    Result := AdjustTokenPrivileges(hToken, False, TP, SizeOf(TP), nil, ReturnLength)
+              and (GetLastError <> ERROR_NOT_ALL_ASSIGNED);
+  finally
+    CloseHandle(hToken);
+  end;
+end;
 
 // ---------------------------------------------------------------------------
 // GetAllProcessInfo
