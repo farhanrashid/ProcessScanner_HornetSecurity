@@ -97,6 +97,11 @@ type
     ReturnLength           : PULONG
   ): NTSTATUS; stdcall;
 
+var
+  CachedSystemDir   : string;
+  CachedSysWow64Dir : string;
+  PathCache: TDictionary<String, String>;
+
 function NT_SUCCESS(Status: NTSTATUS): Boolean; inline;
 begin
   Result := Status >= 0;
@@ -124,6 +129,22 @@ begin
   if H = 0 then Exit;
   @_NtQueryInformationProcess := GetProcAddress(H, 'NtQueryInformationProcess');
   @_NtQuerySystemInformation  := GetProcAddress(H, 'NtQuerySystemInformation');
+end;
+
+
+procedure InitPathCache;
+var
+  Buf : array[0..MAX_PATH] of Char;
+begin
+  if GetSystemDirectory(Buf, MAX_PATH) > 0 then
+    CachedSystemDir := Buf;
+
+  if GetSystemWow64Directory(Buf, MAX_PATH) > 0 then
+    CachedSysWow64Dir := Buf
+  else
+    CachedSysWow64Dir := '';  // 32-bit OS, no WOW64
+
+  PathCache := TDictionary<String, String>.Create;
 end;
 
 // ---------------------------------------------------------------------------
@@ -257,10 +278,10 @@ begin
 end;
 
 // ---------------------------------------------------------------------------
-// ResolveShortNameToFullPath
+// ResolveImagetoSystemPath
 // ---------------------------------------------------------------------------
 
-function ResolveShortNameToFullPath(const ShortName: string): string;
+function ResolveImagetoSystemPath(const ShortName: string): string;
 var
   SystemDir : string;
   SysWow64  : string;
@@ -271,37 +292,38 @@ begin
   Result := '';
   if ShortName = '' then Exit;
 
-  // PID 4 "System" is the kernel — return ntoskrnl.exe path
-  if SameText(ShortName, 'System') then
-  begin
-    SetLength(SystemDir, MAX_PATH);
-    SetLength(SystemDir, GetSystemDirectory(PChar(SystemDir), MAX_PATH));
-    Result := SystemDir + '\ntoskrnl.exe';
-    Exit;
+  if PathCache.TryGetValue(ShortName, Result) then Exit;
+
+  try
+    // PID 4 "System" is the kernel — return ntoskrnl.exe path
+    if SameText(ShortName, 'System') then
+    begin
+      Result := CachedSystemDir + '\ntoskrnl.exe';
+      Exit;
+    end;
+
+    // SearchPath already covers: System32, Windows dir, %PATH%
+    FilePart := nil;
+    Len := SearchPath(nil, PChar(ShortName), nil, MAX_PATH, Buffer, FilePart);
+    if Len > 0 then
+    begin
+      Result := Buffer;
+      Exit;
+    end;
+
+    if CachedSysWow64Dir <> '' then
+    begin
+      Result := CachedSysWow64Dir + '\' + ShortName;
+      if FileExists(Result) then Exit;
+    end;
+
+    Result := CachedSystemDir + '\' + ShortName;
+    if not FileExists(Result) then
+      Result := '';   // don't return a path that doesn't exist
+  finally
+    PathCache.Add(ShortName, Result);
   end;
 
-  // SearchPath checks: app dir -> System32 -> Windows dir -> %PATH%
-  // Handles svchost.exe, csrss.exe, smss.exe, wininit.exe, etc.
-  FilePart := nil;
-  Len := SearchPath(nil, PChar(ShortName), nil, MAX_PATH, Buffer, FilePart);
-  if Len > 0 then
-  begin
-    Result := Buffer;
-    Exit;
-  end;
-
-  // Explicit System32 check (SearchPath can miss it without SeDebugPrivilege on some configurations)
-  SetLength(SystemDir, MAX_PATH);
-  SetLength(SystemDir, GetSystemDirectory(PChar(SystemDir), MAX_PATH));
-  Result := SystemDir + '\' + ShortName;
-
-  // SysWOW64 for 32-bit processes running on 64-bit Windows
-  SetLength(SysWow64, MAX_PATH);
-  SetLength(SysWow64, GetSystemWow64Directory(PChar(SysWow64), MAX_PATH));
-  if SysWow64 <> '' then
-  begin
-    Result := SysWow64 + '\' + ShortName;
-  end;
 end;
 
 // ---------------------------------------------------------------------------
@@ -391,7 +413,7 @@ begin
             Entry^.ImageName.Length div SizeOf(WideChar));
 
         if IsFileNameOnly(ImageName) then
-          SystemProcessInfo.FilePath := ResolveShortNameToFullPath(ImageName)
+          SystemProcessInfo.FilePath := ResolveImagetoSystemPath(ImageName)
         else
           SystemProcessInfo.FilePath := ImageName;
 
@@ -445,5 +467,10 @@ begin
 
 end;
 
+initialization
+  InitPathCache;
+
+Finalization
+  PathCache.Free;
 end.
 
