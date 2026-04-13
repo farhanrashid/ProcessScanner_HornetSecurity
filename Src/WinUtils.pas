@@ -27,6 +27,7 @@ const
   ProcessImageFileName      = 27;
   ProcessImageFileNameWin32 = 43;
   SystemProcessInformation  = 5;
+  SystemProcessIdInformation = 88; // 0x58
 
   PROCESS_QUERY_LIMITED_INFORMATION = $1000;
   PROCESS_QUERY_INFORMATION         = $0400;
@@ -87,6 +88,12 @@ type
   end;
 
   PSYSTEM_PROCESS_INFORMATION = ^SYSTEM_PROCESS_INFORMATION;
+
+  SYSTEM_PROCESS_ID_INFORMATION = record
+    ProcessId : ULONG_PTR;
+    ImageName : NT_UNICODE_STRING;  // Buffer must be pre-allocated
+  end;
+  PSYSTEM_PROCESS_ID_INFORMATION = ^SYSTEM_PROCESS_ID_INFORMATION;
 
   TNtQueryInformationProcess = function(
     ProcessHandle           : THandle;
@@ -312,6 +319,35 @@ begin
 end;
 
 // ---------------------------------------------------------------------------
+// GetProcessFilePathNoHandle
+// ---------------------------------------------------------------------------
+
+function GetProcessFilePathNoHandle(ProcessId: DWORD): string;
+var
+  Status   : NTSTATUS;
+  Info     : SYSTEM_PROCESS_ID_INFORMATION;
+  Buf      : array[0..MAX_PATH] of WideChar;
+begin
+  Result := '';
+  if ProcessId = 0 then Exit;
+
+  ZeroMemory(@Info, SizeOf(Info));
+  Info.ProcessId           := ProcessId;
+  Info.ImageName.Length    := 0;
+  Info.ImageName.MaximumLength := MAX_PATH * SizeOf(WideChar);
+  Info.ImageName.Buffer    := @Buf[0];
+
+  Status := _NtQuerySystemInformation( SystemProcessIdInformation,  @Info,  SizeOf(Info),  nil);
+
+  if NT_SUCCESS(Status) and (Info.ImageName.Length > 0) then
+    SetString(Result,
+      Info.ImageName.Buffer,
+      Info.ImageName.Length div SizeOf(WideChar));
+
+  Result := NativePathToWin32Path(Result);
+end;
+
+// ---------------------------------------------------------------------------
 // Public implementation
 // ---------------------------------------------------------------------------
 
@@ -447,7 +483,9 @@ begin
     finally
       CloseHandle(hProcess);
     end;
-  end;
+  end
+  else
+    Result := GetProcessFilePathNoHandle(ProcessId);
 
 end;
 
