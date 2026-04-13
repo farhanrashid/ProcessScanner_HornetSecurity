@@ -330,20 +330,16 @@ var
 begin
   Result := '';
   if ProcessId = 0 then Exit;
-
   ZeroMemory(@Info, SizeOf(Info));
   Info.ProcessId           := ProcessId;
   Info.ImageName.Length    := 0;
   Info.ImageName.MaximumLength := MAX_PATH * SizeOf(WideChar);
   Info.ImageName.Buffer    := @Buf[0];
-
   Status := _NtQuerySystemInformation( SystemProcessIdInformation,  @Info,  SizeOf(Info),  nil);
-
   if NT_SUCCESS(Status) and (Info.ImageName.Length > 0) then
     SetString(Result,
       Info.ImageName.Buffer,
       Info.ImageName.Length div SizeOf(WideChar));
-
   Result := NativePathToWin32Path(Result);
 end;
 
@@ -465,6 +461,9 @@ begin
   hProcess := 0;
   if ProcessId = 0 then Exit; // PID 0 = Idle, no real path
 
+  Result := GetProcessFilePathNoHandle(ProcessId);
+  if Result <> '' then Exit;
+
   // --- Step 1: try with minimal access (preferred, works for most) ---
   for AccessMask in [PROCESS_QUERY_LIMITED_INFORMATION,
                      PROCESS_QUERY_INFORMATION,
@@ -483,9 +482,7 @@ begin
     finally
       CloseHandle(hProcess);
     end;
-  end
-  else
-    Result := GetProcessFilePathNoHandle(ProcessId);
+  end;
 
 end;
 
