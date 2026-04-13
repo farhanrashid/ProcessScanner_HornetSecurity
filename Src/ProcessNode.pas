@@ -103,7 +103,8 @@ var
   pe32   : TProcessEntry32W;
   node   : TProcessNode;
   FilePath : String;
-  FilePaths : TDictionary<DWORD, String>;
+  SystemProcessInfo: TSystemProcessInfo;
+  ProcessInfos : TDictionary<DWORD, TSystemProcessInfo>;
 begin
   Result := TSnapshot.Create([doOwnsValues]);  // own objects
 
@@ -111,7 +112,7 @@ begin
   EnableDebugPrivilege;
 
   try
-    FilePaths := GetAllFilePaths;
+    ProcessInfos := GetAllProcessInfo;
 
     hSnap := CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if hSnap = INVALID_HANDLE_VALUE then
@@ -129,11 +130,13 @@ begin
         node.ExeName   := ExtractFileName(pe32.szExeFile);
         FilePath := GetProcessFilePath(pe32.th32ProcessID);
 
+        ProcessInfos.TryGetValue(node.PID, SystemProcessInfo);
+
         if (FilePath = '') then
-          FilePaths.TryGetValue(node.PID, FilePath);
+          FilePath := SystemProcessInfo.FilePath;
 
         node.ExePath   := UpperCase(FilePath);
-        node.SessionID := QuerySessionID(pe32.th32ProcessID);
+        node.SessionID := SystemProcessInfo.SessionID;
 
         Result.Add(node.PID, node);
       until not Process32NextW(hSnap, pe32);
@@ -142,7 +145,7 @@ begin
     end;
 
   finally
-    FilePaths.Free;
+    ProcessInfos.Free;
   end;
 end;
 

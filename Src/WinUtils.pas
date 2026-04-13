@@ -4,14 +4,18 @@ interface
 
 uses Windows, SysUtils, System.Generics.Collections;
 
+type TSystemProcessInfo = record
+  FilePath : String;
+  SessionID : DWORD;
+end;
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
 function EnableDebugPrivilege: Boolean;
-function GetAllFilePaths : TDictionary<DWORD, String>; // All PID -> File path
+function GetAllProcessInfo : TDictionary<DWORD, TSystemProcessInfo>; // All PID -> SystemProcessInfo
 function GetProcessFilePath(ProcessId: DWORD): string;
-function QuerySessionID(PID: DWORD): DWORD;
 
 implementation
 
@@ -333,10 +337,10 @@ end;
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
-// GetAllFilePaths
+// GetAllProcessInfo
 // ---------------------------------------------------------------------------
 
-function GetAllFilePaths : TDictionary<DWORD, String>;
+function GetAllProcessInfo : TDictionary<DWORD, TSystemProcessInfo>;
 const KB = 1024;
 var
   Status       : NTSTATUS;
@@ -345,8 +349,9 @@ var
   ReturnLength : ULONG;
   Entry        : PSYSTEM_PROCESS_INFORMATION;
   ImageName    : string;
+  SystemProcessInfo: TSystemProcessInfo;
 begin
-  Result := TDictionary<DWORD, String>.Create();
+  Result := TDictionary<DWORD, TSystemProcessInfo>.Create();
 
   EnsureNtApi;
   if not Assigned(_NtQuerySystemInformation) then Exit;
@@ -379,14 +384,18 @@ begin
     begin
       if Entry^.ImageName.Length > 0 then
       begin
+        SystemProcessInfo.SessionID := Entry^.SessionId;
+
         SetString(ImageName,
             Entry^.ImageName.Buffer,
             Entry^.ImageName.Length div SizeOf(WideChar));
 
         if IsFileNameOnly(ImageName) then
-          Result.Add(Entry^.UniqueProcessId, ResolveShortNameToFullPath(ImageName))
+          SystemProcessInfo.FilePath := ResolveShortNameToFullPath(ImageName)
         else
-          Result.Add(Entry^.UniqueProcessId, ImageName);
+          SystemProcessInfo.FilePath := ImageName;
+
+        Result.Add(Entry^.UniqueProcessId, SystemProcessInfo);
 
       end;
 
@@ -434,19 +443,6 @@ begin
     end;
   end;
 
-end;
-
-// ---------------------------------------------------------------------------
-// QuerySessionID
-// ---------------------------------------------------------------------------
-
-function QuerySessionID(PID: DWORD): DWORD;
-var
-  sid: DWORD;
-begin
-  Result := DWORD(0);
-  if ProcessIdToSessionId(PID, sid) then
-    Result := sid;
 end;
 
 end.
