@@ -78,7 +78,7 @@ begin
     FIsRunning := False;
     DoLog('Scan Started ' + FExePath);
     try
-      //FResult := ScanFile;
+      FResult := ScanFile;
     except
       on Exception do
         FResult := srAccessDenied;

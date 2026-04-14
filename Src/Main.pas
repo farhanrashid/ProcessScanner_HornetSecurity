@@ -25,6 +25,8 @@ type
     btnRefresh: TButton;
     CountdownTimer: TTimer;
     SplitterLog: TSplitter;
+    btnRescan: TButton;
+    btnStopAll: TButton;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure btnRefreshClick(Sender: TObject);
@@ -33,6 +35,8 @@ type
     procedure tvProcessesCustomDrawItem(Sender: TCustomTreeView;
       Node: TTreeNode; State: TCustomDrawState; var DefaultDraw: Boolean);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
+    procedure btnRescanClick(Sender: TObject);
+    procedure btnStopAllClick(Sender: TObject);
   private
     { Private declarations }
     FSnapshot : TSnapshot;
@@ -75,6 +79,16 @@ const
 procedure TfrmMain.btnRefreshClick(Sender: TObject);
 begin
   Refresh;
+end;
+
+procedure TfrmMain.btnRescanClick(Sender: TObject);
+begin
+  FScanResults.Clear;
+end;
+
+procedure TfrmMain.btnStopAllClick(Sender: TObject);
+begin
+  CancelAllWorkers;
 end;
 
 procedure TfrmMain.Refresh;
@@ -225,7 +239,7 @@ begin
     begin
       Worker := TFileSearchWorker.Create(FilePath, SearchDone, AddLog);
       FWorkers.Add(FilePath, Worker);
-      //Worker.Start;
+      Worker.Start;
     end;
   end;
 

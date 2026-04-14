@@ -61,6 +61,24 @@ object frmMain: TfrmMain
       TabOrder = 2
       OnClick = btnRefreshClick
     end
+    object btnRescan: TButton
+      Left = 471
+      Top = 6
+      Width = 75
+      Height = 25
+      Caption = 'Rescan files'
+      TabOrder = 3
+      OnClick = btnRescanClick
+    end
+    object btnStopAll: TButton
+      Left = 560
+      Top = 6
+      Width = 75
+      Height = 25
+      Caption = 'Stop all scan'
+      TabOrder = 4
+      OnClick = btnStopAllClick
+    end
   end
   object pnlMain: TPanel
     Left = 0
@@ -160,7 +178,7 @@ object frmMain: TfrmMain
   end
   object CountdownTimer: TTimer
     OnTimer = CountdownTimerTimer
-    Left = 504
-    Top = 8
+    Left = 328
+    Top = 64
   end
 end
