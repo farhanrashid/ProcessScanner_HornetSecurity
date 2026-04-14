@@ -319,8 +319,9 @@ begin
 
   for Worker in FWorkers.Values do
   begin
-    if Worker.IsRunning then
-      Worker.WaitFor;
+    if Worker.IsRunning and not Worker.Finished then
+      CheckSynchronize(10);
+      //Worker.WaitFor;
   end;
 end;
 
