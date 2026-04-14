@@ -17,7 +17,7 @@ object frmMain: TfrmMain
   object SplitterLog: TSplitter
     Left = 381
     Top = 41
-    Height = 535
+    Height = 549
     Align = alRight
     ExplicitLeft = 312
     ExplicitTop = 208
@@ -30,7 +30,6 @@ object frmMain: TfrmMain
     Height = 41
     Align = alTop
     TabOrder = 0
-    ExplicitWidth = 962
     object cbSystemProcess: TCheckBox
       Left = 130
       Top = 10
@@ -67,10 +66,9 @@ object frmMain: TfrmMain
     Left = 0
     Top = 41
     Width = 381
-    Height = 535
+    Height = 549
     Align = alClient
     TabOrder = 1
-    ExplicitWidth = 344
     object lvlProcesses: TLabel
       Left = 1
       Top = 1
@@ -84,23 +82,21 @@ object frmMain: TfrmMain
       Left = 1
       Top = 16
       Width = 379
-      Height = 518
+      Height = 532
       Align = alClient
       Indent = 19
       TabOrder = 0
       OnChange = tvProcessesChange
       OnCustomDrawItem = tvProcessesCustomDrawItem
-      ExplicitWidth = 342
     end
   end
   object pnlDetails: TPanel
     Left = 0
-    Top = 576
+    Top = 590
     Width = 1284
-    Height = 119
+    Height = 105
     Align = alBottom
     TabOrder = 2
-    ExplicitWidth = 962
     object lblDetails: TLabel
       Left = 1
       Top = 1
@@ -114,7 +110,7 @@ object frmMain: TfrmMain
       Left = 1
       Top = 16
       Width = 1282
-      Height = 102
+      Height = 88
       Align = alClient
       Columns = <
         item
@@ -134,34 +130,32 @@ object frmMain: TfrmMain
         FFFFFF}
       TabOrder = 0
       ViewStyle = vsReport
-      ExplicitWidth = 960
     end
   end
   object pnlLog: TPanel
     Left = 384
     Top = 41
     Width = 900
-    Height = 535
+    Height = 549
     Align = alRight
     TabOrder = 3
-    ExplicitLeft = 284
     object lblLog: TLabel
       Left = 1
       Top = 1
-      Width = 20
+      Width = 898
       Height = 15
       Align = alTop
       Caption = 'Log'
+      ExplicitWidth = 20
     end
     object memoLog: TMemo
       Left = 1
       Top = 16
       Width = 898
-      Height = 518
+      Height = 532
       Align = alClient
       ScrollBars = ssVertical
       TabOrder = 0
-      ExplicitWidth = 616
     end
   end
   object CountdownTimer: TTimer

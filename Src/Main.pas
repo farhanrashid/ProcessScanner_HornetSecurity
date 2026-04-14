@@ -47,6 +47,7 @@ type
     procedure RebuildTreeView(aOldSnapshot: TSnapshot; aOldRootNode: TProcessNode);
     procedure PopulateNode(ParentItem: TTreeNode; Node: TProcessNode);
     procedure PopulateNewNode(aNewNode, aOldNode: TProcessNode);
+    procedure UpdateScanWorkers(aCurrentFiles: TStrings);
 
     procedure SearchDone(aExePath: string; aResult: TScanResult);
     procedure SaveResultsToFile;
@@ -80,15 +81,21 @@ var
   node, Parent : TProcessNode;
   oldSnapshot : TSnapshot;
   oldRootNode : TProcessNode;
+  CurrentFiles: TStringList;
+  sr : TScanResult;
 begin
   if FinRefresh then exit;
   FinRefresh := True;
   CountdownTimer.Enabled := False;
 
-  oldSnapshot := FSnapshot;
-  oldRootNode := FRootNode;
+  oldSnapshot   := FSnapshot;
+  oldRootNode   := FRootNode;
+  CurrentFiles  := TStringList.Create;
 
   try
+    CurrentFiles.Sorted := True;
+    CurrentFiles.Duplicates := dupIgnore;
+
     FSnapshot := GetSnapshot;
     FRootNode := TProcessNode.Create;
 
@@ -102,13 +109,28 @@ begin
       Parent.Childs.Add(node.PID, node);
       node.ParentNode := Parent;
 
+
+      //update Scan Result
+      if (Node.ExePath = '') or IsFileNameOnly(Node.ExePath) then
+        Node.ScanResult := srAccessDenied
+      else
+      begin
+        if FScanResults.TryGetValue(Node.ExePath, sr) then
+          Node.ScanResult := sr
+
+        else  // create entry in ScanResults
+          FScanResults.Add(Node.ExePath, srPending);
+
+        CurrentFiles.Add(node.ExePath);
+      end;
     end;
 
     RebuildTreeView(oldSnapshot, oldRootNode);
-
+    UpdateScanWorkers(CurrentFiles);
   finally
     if Assigned(oldSnapshot) then oldSnapshot.Free;
     if Assigned(oldRootNode) then oldRootNode.Free;
+    CurrentFiles.Free;
     FinRefresh := False;
     FCountdown := COUNTDOWN_START;
     CountdownTimer.Enabled := True;
@@ -157,8 +179,6 @@ procedure TfrmMain.RebuildTreeView(aOldSnapshot: TSnapshot; aOldRootNode: TProce
 var
   node: TProcessNode;
   pid : DWORD;
-  sr : TScanResult;
-  Worker : TFileSearchWorker;
 begin
   tvProcesses.Items.BeginUpdate;
   try
@@ -183,35 +203,27 @@ begin
       PopulateNewNode(FRootNode, aOldRootNode);
 
     end;
-
-    //update Scan Result
-    for Node in FSnapshot.Values do
-    begin
-      if (Node.ExePath = '') or IsFileNameOnly(Node.ExePath) then
-        Node.ScanResult := srAccessDenied
-      else if FScanResults.TryGetValue(Node.ExePath, sr) then
-      begin
-        Node.ScanResult := sr;
-        //TODO make list of found file path, then request cancel to dispeared paths at the end
-      end
-      else
-      begin  // create entry in results and new Worker for search
-        FScanResults.Add(Node.ExePath, srPending);
-      end;
-
-      if (Node.ExePath <> '') and (FScanResults[Node.ExePath] = srPending) and not FWorkers.ContainsKey(Node.ExePath) then
-      begin
-        Worker := TFileSearchWorker.Create(Node.ExePath, SearchDone);
-        FWorkers.Add(Node.ExePath, Worker);
-        //Worker.Start;
-        AddLog('Scan strated ' + Node.ExePath);
-      end;
-    end;
-
   finally
     tvProcesses.Items.EndUpdate;
   end;
 
+end;
+
+procedure TfrmMain.UpdateScanWorkers(aCurrentFiles: TStrings);
+var
+  FilePath : string;
+  Worker : TFileSearchWorker;
+begin
+  for FilePath in aCurrentFiles do
+  begin
+    if (FilePath <> '') and (FScanResults[FilePath] = srPending) and not FWorkers.ContainsKey(FilePath) then
+    begin
+      Worker := TFileSearchWorker.Create(FilePath, SearchDone);
+      FWorkers.Add(FilePath, Worker);
+      //Worker.Start;
+      AddLog('Scan strated ' + FilePath);
+    end;
+  end;
 end;
 
 procedure TfrmMain.SearchDone(aExePath: string; aResult: TScanResult);
