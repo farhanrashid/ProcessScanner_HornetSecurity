@@ -1,7 +1,7 @@
 object frmMain: TfrmMain
   Left = 0
   Top = 0
-  Caption = 'Task Manager'
+  Caption = 'Process Scanner'
   ClientHeight = 695
   ClientWidth = 1284
   Color = clBtnFace
