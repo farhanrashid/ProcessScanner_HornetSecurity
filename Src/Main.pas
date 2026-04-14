@@ -50,6 +50,7 @@ type
     procedure UpdateScanWorkers(aCurrentFiles: TStrings);
 
     procedure SearchDone(aExePath: string; aResult: TScanResult);
+    procedure CancelAllWorkers;
     procedure SaveResultsToFile;
     procedure LoadResultsFromFile;
   public
@@ -99,6 +100,7 @@ begin
     FSnapshot := GetSnapshot;
     FRootNode := TProcessNode.Create;
 
+    //update Parent
     for node in FSnapshot.Values do
     begin
       //AddLog(node.ExeName + '=' + node.PID.ToString + '=' + node.ParentPID.ToString);
@@ -108,9 +110,11 @@ begin
 
       Parent.Childs.Add(node.PID, node);
       node.ParentNode := Parent;
+    end;
 
-
-      //update Scan Result
+    //update Scan Result
+    for node in FSnapshot.Values do
+    begin
       if (Node.ExePath = '') or IsFileNameOnly(Node.ExePath) then
         Node.ScanResult := srAccessDenied
       else
@@ -214,16 +218,23 @@ var
   FilePath : string;
   Worker : TFileSearchWorker;
 begin
+
   for FilePath in aCurrentFiles do
   begin
     if (FilePath <> '') and (FScanResults[FilePath] = srPending) and not FWorkers.ContainsKey(FilePath) then
     begin
-      Worker := TFileSearchWorker.Create(FilePath, SearchDone);
+      Worker := TFileSearchWorker.Create(FilePath, SearchDone, AddLog);
       FWorkers.Add(FilePath, Worker);
       //Worker.Start;
-      AddLog('Scan strated ' + FilePath);
     end;
   end;
+
+  for FilePath in FWorkers.Keys do
+  begin
+    if aCurrentFiles.IndexOf(FilePath) = -1 then
+      FWorkers[FilePath].RequestCancel;
+  end;
+
 end;
 
 procedure TfrmMain.SearchDone(aExePath: string; aResult: TScanResult);
@@ -275,9 +286,24 @@ begin
 
 end;
 
+procedure TfrmMain.CancelAllWorkers;
+var
+  Worker : TFileSearchWorker;
+begin
+  for Worker in FWorkers.Values do
+  begin
+    Worker.RequestCancel;
+  end;
+
+  for Worker in FWorkers.Values do
+  begin
+    if Worker.IsRunning then
+      Worker.WaitFor;
+  end;
+end;
+
 procedure TfrmMain.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
-  // TODO FWorkers  request Cancel  .WaitFor;
   SaveResultsToFile;
 end;
 
@@ -287,8 +313,7 @@ begin
   FSnapshot := Nil;
   FRootNode := Nil;
   FScanResults := TDictionary<string, TScanResult>.Create;
-  //TODO : Load from DB or persistent storage
-  //FScanResults.Add('C:\Program Files\Sublime Text\plugin_host-3.8.exe', srFound);
+
   LoadResultsFromFile;
 
   FWorkers := TObjectDictionary<string, TFileSearchWorker>.Create([doOwnsValues]);
@@ -304,6 +329,7 @@ begin
   if Assigned(FRootNode) then FRootNode.Free;
   FScanResults.Free;
 
+  CancelAllWorkers;
   FWorkers.Free;
 end;
 

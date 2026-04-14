@@ -1,4 +1,4 @@
-unit FileSearchWorker;
+﻿unit FileSearchWorker;
 
 interface
 
@@ -7,26 +7,32 @@ uses
 
 type
   TWorkerDoneCallback = procedure(aExePath: string; aResult: TScanResult) of object;
+  TLogCallback = procedure(aMessage: string) of object;
 
   TFileSearchWorker = class(TThread)
   private
     FExePath      : string;
     FCancelFlag   : TEvent;      // signalled to request cooperative cancel
     FOnDone       : TWorkerDoneCallback;
+    FOnLog        : TLogCallback;
     FResult       : TScanResult;
+    FIsRunning    : Boolean;
 
     function  ScanFile: TScanResult;
     procedure DoCallback;
+    procedure DoLog(aMessage: string);
   protected
     procedure Execute; override;
   public
-    constructor Create(const ExePath: string; OnDone: TWorkerDoneCallback);
+    constructor Create(const ExePath: string; OnDone: TWorkerDoneCallback; LogCall: TLogCallback);
     destructor Destroy; override;
 
     /// Signal the worker to stop. Non-blocking; the thread terminates shortly after.
     procedure RequestCancel;
 
     property ExePath : string read FExePath;
+    property IsRunning : Boolean read FIsRunning;
+
   end;
 
 implementation
@@ -38,13 +44,18 @@ const
 
 { TFileSearchWorker }
 
-constructor TFileSearchWorker.Create(const ExePath: string;  OnDone: TWorkerDoneCallback);
+constructor TFileSearchWorker.Create(const ExePath: string; OnDone: TWorkerDoneCallback; LogCall: TLogCallback);
 begin
   inherited Create(True {suspended});
+  FIsRunning  := False;
   FExePath    := ExePath;
   FOnDone     := OnDone;
+  FOnLog      := LogCall;
+
   FCancelFlag := TEvent.Create(nil, True, False, '');
   FreeOnTerminate := False;
+
+  DoLog('Scan worker created ' + FExePath);
 end;
 
 destructor TFileSearchWorker.Destroy;
@@ -56,25 +67,49 @@ end;
 procedure TFileSearchWorker.RequestCancel;
 begin
   FCancelFlag.SetEvent;
-  // Do NOT call Terminate; we rely only on cooperative checking.
+
+  DoLog('Cancel Requested ' + FExePath);
+
 end;
 
 procedure TFileSearchWorker.Execute;
 begin
   try
-    FResult := ScanFile;
-  except
-    on Exception do
-      FResult := srAccessDenied;
+    FIsRunning := False;
+    DoLog('Scan Started ' + FExePath);
+    try
+      //FResult := ScanFile;
+    except
+      on Exception do
+        FResult := srAccessDenied;
+    end;
+
+    DoLog('Scan done ' + FExePath);
+  finally
+    FIsRunning := False;
+    DoCallback;
   end;
 
-  Synchronize(DoCallback);
 end;
 
 procedure TFileSearchWorker.DoCallback;
 begin
-  if Assigned(FOnDone) then
-    FOnDone(FExePath, FResult);
+  TThread.Queue(nil,
+    procedure
+    begin
+      if Assigned(FOnDone) then
+        FOnDone(FExePath, FResult);
+    end);
+end;
+
+procedure TFileSearchWorker.DoLog(aMessage: string);
+begin
+  TThread.Queue(nil,
+    procedure
+    begin
+      if Assigned(FOnLog) then
+        FOnLog(aMessage);
+    end);
 end;
 
 function TFileSearchWorker.ScanFile: TScanResult;
