@@ -155,6 +155,10 @@ var
   _DevicePrefixCount : Integer = 0;
   _DevicesInitOnce   : Boolean = False;
 
+// ---------------------------------------------------------------------------
+// NormalizeDfsDevicePath
+// ---------------------------------------------------------------------------
+
 function NormalizeDfsDevicePath(const DevicePath: string): string;
 var
   StartPos, EndPos: Integer;
@@ -174,6 +178,10 @@ begin
   // Remove the \DfsClient\;Y:0000000938e4d4d7 segment
   Delete(Result, StartPos, EndPos - StartPos);
 end;
+
+// ---------------------------------------------------------------------------
+// BuildDevicePrefixTable
+// ---------------------------------------------------------------------------
 
 procedure BuildDevicePrefixTable;
 var

@@ -55,7 +55,7 @@ begin
   FCancelFlag := TEvent.Create(nil, True, False, '');
   FreeOnTerminate := False;
 
-  DoLog('Scan worker created ' + FExePath);
+  //DoLog('Scan worker created ' + FExePath);
 end;
 
 destructor TFileSearchWorker.Destroy;
