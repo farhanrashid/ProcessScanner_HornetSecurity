@@ -168,7 +168,10 @@ begin
         end;
 
         if FCancelFlag.WaitFor(0) = wrSignaled then  //Cancelled
+        begin
+          DoLog('Scan Cancelled ' + FExePath);
           Exit(srPending);
+        end;
       end;
 
     until bytesRead < BLOCK_SIZE;
