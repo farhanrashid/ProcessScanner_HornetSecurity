@@ -75,7 +75,7 @@ end;
 procedure TFileSearchWorker.Execute;
 begin
   try
-    FIsRunning := False;
+    FIsRunning := True;
     try
       FResult := ScanFile;
     except
