@@ -160,7 +160,10 @@ begin
         begin
           Inc(matchLen);
           if matchLen = NEEDLE_LEN then
+          begin
+            DoLog('Scan found ' + FExePath);
             Exit(srFound);        // ← short-circuit: no need to read more
+          end
         end
         else
         begin
@@ -181,7 +184,7 @@ begin
 
     until bytesRead < BLOCK_SIZE;
 
-    DoLog('Scan done ' + FExePath);
+    DoLog('Scan not found ' + FExePath);
 
   finally
     fs.Free;
