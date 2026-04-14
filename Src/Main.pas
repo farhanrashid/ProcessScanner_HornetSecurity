@@ -27,6 +27,7 @@ type
     SplitterLog: TSplitter;
     btnRescan: TButton;
     btnStopAll: TButton;
+    btnClearLog: TButton;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure btnRefreshClick(Sender: TObject);
@@ -37,6 +38,7 @@ type
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure btnRescanClick(Sender: TObject);
     procedure btnStopAllClick(Sender: TObject);
+    procedure btnClearLogClick(Sender: TObject);
   private
     { Private declarations }
     FSnapshot : TSnapshot;
@@ -75,6 +77,11 @@ const
   COUNTDOWN_START = 10;
 
   ResultsFile = 'results.json';
+
+procedure TfrmMain.btnClearLogClick(Sender: TObject);
+begin
+  memoLog.Clear;
+end;
 
 procedure TfrmMain.btnRefreshClick(Sender: TObject);
 begin

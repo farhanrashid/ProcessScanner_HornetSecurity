@@ -71,13 +71,22 @@ object frmMain: TfrmMain
       OnClick = btnRescanClick
     end
     object btnStopAll: TButton
-      Left = 560
+      Left = 552
       Top = 6
       Width = 75
       Height = 25
       Caption = 'Stop all scan'
       TabOrder = 4
       OnClick = btnStopAllClick
+    end
+    object btnClearLog: TButton
+      Left = 633
+      Top = 6
+      Width = 75
+      Height = 25
+      Caption = 'Clear Log'
+      TabOrder = 5
+      OnClick = btnClearLogClick
     end
   end
   object pnlMain: TPanel
@@ -160,7 +169,7 @@ object frmMain: TfrmMain
     object lblLog: TLabel
       Left = 1
       Top = 1
-      Width = 20
+      Width = 898
       Height = 15
       Align = alTop
       Caption = 'Log'
