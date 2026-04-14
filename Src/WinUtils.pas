@@ -16,6 +16,7 @@ end;
 function EnableDebugPrivilege: Boolean;
 function GetAllProcessInfo : TDictionary<DWORD, TSystemProcessInfo>; // All PID -> SystemProcessInfo
 function GetProcessFilePath(ProcessId: DWORD): string;
+function IsFileNameOnly(const S: string): Boolean;
 
 implementation
 
@@ -248,8 +249,6 @@ end;
 
 function ResolveImagetoSystemPath(const ShortName: string): string;
 var
-  SystemDir : string;
-  SysWow64  : string;
   Buffer    : array[0..MAX_PATH] of Char;
   FilePart  : PChar;
   Len       : DWORD;
@@ -288,15 +287,6 @@ begin
     PathCache.Add(ShortName, Result);
   end;
 
-end;
-
-// ---------------------------------------------------------------------------
-// IsFileNameOnly
-// ---------------------------------------------------------------------------
-
-function IsFileNameOnly(const S: string): Boolean;
-begin
-  Result := ExtractFilePath(S) = '';
 end;
 
 // ---------------------------------------------------------------------------
@@ -376,6 +366,15 @@ begin
   finally
     CloseHandle(hToken);
   end;
+end;
+
+// ---------------------------------------------------------------------------
+// IsFileNameOnly
+// ---------------------------------------------------------------------------
+
+function IsFileNameOnly(const S: string): Boolean;
+begin
+  Result := ExtractFilePath(S) = '';
 end;
 
 // ---------------------------------------------------------------------------

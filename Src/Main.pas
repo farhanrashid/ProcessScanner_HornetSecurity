@@ -63,7 +63,7 @@ implementation
 
 {$R *.dfm}
 
-uses System.JSON, System.IOUtils;
+uses System.JSON, System.IOUtils, WinUtils;
 
 const
   COUNTDOWN_START = 10;
@@ -187,7 +187,7 @@ begin
     //update Scan Result
     for Node in FSnapshot.Values do
     begin
-      if Node.ExePath = '' then
+      if (Node.ExePath = '') or IsFileNameOnly(Node.ExePath) then
         Node.ScanResult := srAccessDenied
       else if FScanResults.TryGetValue(Node.ExePath, sr) then
       begin
@@ -270,13 +270,8 @@ begin
 end;
 
 procedure TfrmMain.FormCreate(Sender: TObject);
-  function GetCurrentSessionID: DWORD;
-  begin
-    Result := 0;
-    ProcessIdToSessionId(GetCurrentProcessId, Result);
-  end;
 begin
-  FCurrentSessionID := GetCurrentSessionID;
+  ProcessIdToSessionId(GetCurrentProcessId, FCurrentSessionID);
   FSnapshot := Nil;
   FRootNode := Nil;
   FScanResults := TDictionary<string, TScanResult>.Create;
