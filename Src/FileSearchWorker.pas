@@ -76,7 +76,6 @@ procedure TFileSearchWorker.Execute;
 begin
   try
     FIsRunning := False;
-    DoLog('Scan Started ' + FExePath);
     try
       FResult := ScanFile;
     except
@@ -84,7 +83,6 @@ begin
         FResult := srAccessDenied;
     end;
 
-    DoLog('Scan done ' + FExePath);
   finally
     FIsRunning := False;
     DoCallback;
@@ -125,13 +123,19 @@ begin
   Result := srNotFound;
 
   if FExePath = '' then
+  begin
+    DoLog('Empty file path');
     Exit(srAccessDenied);
+  end;
 
   try
     fs := TFileStream.Create(FExePath, fmOpenRead or fmShareDenyNone);
   except
+    DoLog('Access Denied ' + FExePath);
     Exit(srAccessDenied);
   end;
+
+  DoLog('Scan Started ' + FExePath);
 
   try
     SetLength(block, BLOCK_SIZE);
@@ -175,6 +179,8 @@ begin
       end;
 
     until bytesRead < BLOCK_SIZE;
+
+    DoLog('Scan done ' + FExePath);
 
   finally
     fs.Free;
