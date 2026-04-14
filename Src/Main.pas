@@ -263,6 +263,9 @@ procedure TfrmMain.SearchDone(aExePath: string; aResult: TScanResult);
 begin
   FScanResults[aExePath] := aResult;
   FWorkers.Remove(aExePath);
+
+  if FWorkers.Count = 0 then Refresh;
+  
 end;
 
 procedure TfrmMain.PopulateNewNode(aNewNode, aOldNode: TProcessNode);
