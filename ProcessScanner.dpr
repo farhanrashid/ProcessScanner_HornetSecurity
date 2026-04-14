@@ -1,4 +1,4 @@
-program TaskManager;
+program ProcessScanner;
 
 uses
   Vcl.Forms,

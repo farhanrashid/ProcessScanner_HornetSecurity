@@ -84,6 +84,7 @@ end;
 procedure TfrmMain.btnRescanClick(Sender: TObject);
 begin
   FScanResults.Clear;
+  Refresh;
 end;
 
 procedure TfrmMain.btnStopAllClick(Sender: TObject);

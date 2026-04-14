@@ -160,11 +160,10 @@ object frmMain: TfrmMain
     object lblLog: TLabel
       Left = 1
       Top = 1
-      Width = 898
+      Width = 20
       Height = 15
       Align = alTop
       Caption = 'Log'
-      ExplicitWidth = 20
     end
     object memoLog: TMemo
       Left = 1

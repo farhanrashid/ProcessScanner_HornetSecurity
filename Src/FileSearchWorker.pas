@@ -121,7 +121,6 @@ var
   i          : Integer;
   b          : Byte;
   matchLen   : Integer;
-  totalBytes : Int64;
 begin
   Result := srNotFound;
 
@@ -138,7 +137,6 @@ begin
     SetLength(block, BLOCK_SIZE);
     SetLength(carry, 0);
     matchLen   := 0;
-    totalBytes := 0;
 
     repeat
 
@@ -168,8 +166,6 @@ begin
           if b = Ord(NEEDLE[1]) then
             matchLen := 1;
         end;
-
-        Inc(totalBytes);
 
         if FCancelFlag.WaitFor(0) = wrSignaled then  //Cancelled
           Exit(srPending);

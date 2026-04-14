@@ -106,6 +106,7 @@ var
   SystemProcessInfo: TSystemProcessInfo;
   ProcessInfos : TDictionary<DWORD, TSystemProcessInfo>;
 begin
+  ProcessInfos := Nil;
   Result := TSnapshot.Create([doOwnsValues]);  // own objects
 
   // Try to enable debug privilege first (best effort - continues even if it fails)
@@ -130,7 +131,8 @@ begin
         node.ExeName   := ExtractFileName(pe32.szExeFile);
         FilePath := GetProcessFilePath(pe32.th32ProcessID);
 
-        ProcessInfos.TryGetValue(node.PID, SystemProcessInfo);
+        if Assigned(ProcessInfos) then
+          ProcessInfos.TryGetValue(node.PID, SystemProcessInfo);
 
         if (FilePath = '') then
           FilePath := SystemProcessInfo.FilePath;
@@ -145,7 +147,7 @@ begin
     end;
 
   finally
-    ProcessInfos.Free;
+    if Assigned(ProcessInfos) then ProcessInfos.Free;
   end;
 end;
 
