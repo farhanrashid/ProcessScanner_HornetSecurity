@@ -155,11 +155,32 @@ var
   _DevicePrefixCount : Integer = 0;
   _DevicesInitOnce   : Boolean = False;
 
+function NormalizeDfsDevicePath(const DevicePath: string): string;
+var
+  StartPos, EndPos: Integer;
+begin
+  Result := DevicePath;
+
+  // DFS paths look like: \Device\Mup\DfsClient\;Y:0000000938e4d4d7\server\share
+  // We need to strip \DfsClient\;X:XXXXXXXXXXXXXXXX to get: \Device\Mup\server\share
+  StartPos := Pos('\DfsClient\;', Result);
+  if StartPos = 0 then Exit;
+
+  // Find the next backslash after the drive+hex portion  e.g. after ";Y:0000000938e4d4d7"
+  EndPos := StartPos + Length('\DfsClient\;');
+  while (EndPos <= Length(Result)) and (Result[EndPos] <> '\') do
+    Inc(EndPos);
+
+  // Remove the \DfsClient\;Y:0000000938e4d4d7 segment
+  Delete(Result, StartPos, EndPos - StartPos);
+end;
+
 procedure BuildDevicePrefixTable;
 var
   Drive  : Char;
   DosName: string;
   Buffer : array[0..1023] of WideChar;
+  DevicePath: string;
 begin
   if _DevicesInitOnce then Exit;
   _DevicesInitOnce := True;
@@ -169,7 +190,9 @@ begin
     DosName := Drive + ':';
     if QueryDosDeviceW(PWideChar(WideString(DosName)), Buffer, Length(Buffer)) > 0 then
     begin
-      _DevicePrefixes[_DevicePrefixCount].DevicePath  := WideCharToString(Buffer);
+      DevicePath := WideCharToString(Buffer);
+      DevicePath := NormalizeDfsDevicePath(DevicePath);
+      _DevicePrefixes[_DevicePrefixCount].DevicePath  := DevicePath;
       _DevicePrefixes[_DevicePrefixCount].DriveLetter := DosName;
       Inc(_DevicePrefixCount);
     end;
@@ -186,6 +209,7 @@ var
   Dev: string;
 begin
   BuildDevicePrefixTable;
+
   for i := 0 to _DevicePrefixCount - 1 do
   begin
     Dev := _DevicePrefixes[i].DevicePath;
