@@ -2,7 +2,7 @@ object frmMain: TfrmMain
   Left = 0
   Top = 0
   Caption = 'Process Scanner'
-  ClientHeight = 695
+  ClientHeight = 729
   ClientWidth = 1284
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -17,11 +17,8 @@ object frmMain: TfrmMain
   object SplitterLog: TSplitter
     Left = 381
     Top = 41
-    Height = 549
+    Height = 583
     Align = alRight
-    ExplicitLeft = 312
-    ExplicitTop = 208
-    ExplicitHeight = 100
   end
   object pnlSettings: TPanel
     Left = 0
@@ -93,7 +90,7 @@ object frmMain: TfrmMain
     Left = 0
     Top = 41
     Width = 381
-    Height = 549
+    Height = 583
     Align = alClient
     TabOrder = 1
     object lvlProcesses: TLabel
@@ -103,13 +100,12 @@ object frmMain: TfrmMain
       Height = 15
       Align = alTop
       Caption = 'Processes'
-      ExplicitWidth = 51
     end
     object tvProcesses: TTreeView
       Left = 1
       Top = 16
       Width = 379
-      Height = 532
+      Height = 566
       Align = alClient
       Indent = 19
       TabOrder = 0
@@ -119,7 +115,7 @@ object frmMain: TfrmMain
   end
   object pnlDetails: TPanel
     Left = 0
-    Top = 590
+    Top = 624
     Width = 1284
     Height = 105
     Align = alBottom
@@ -131,39 +127,28 @@ object frmMain: TfrmMain
       Height = 15
       Align = alTop
       Caption = 'Process Details'
-      ExplicitWidth = 78
     end
-    object lvDetails: TListView
+    object vleDeltails: TValueListEditor
       Left = 1
       Top = 16
       Width = 1282
       Height = 88
       Align = alClient
-      Columns = <
-        item
-          Caption = 'Property'
-          Width = 100
-        end
-        item
-          Caption = 'Value'
-          Width = 800
-        end>
-      Items.ItemData = {
-        059D0000000300000000000000FFFFFFFFFFFFFFFF01000000FFFFFFFF000000
-        0009460069006C0065002000500061007400680000F81E2C2400000000FFFFFF
-        FFFFFFFFFF01000000FFFFFFFF000000000A500072006F006300650073007300
-        20004900440000C81C2C2400000000FFFFFFFFFFFFFFFF01000000FFFFFFFF00
-        0000000A530065007300730069006F006E002000490044000090232C24FFFFFF
-        FFFFFF}
+      Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goColSizing, goEditing, goAlwaysShowEditor, goThumbTracking]
       TabOrder = 0
-      ViewStyle = vsReport
+      TitleCaptions.Strings = (
+        'Property'
+        'Value')
+      ColWidths = (
+        150
+        1126)
     end
   end
   object pnlLog: TPanel
     Left = 384
     Top = 41
     Width = 900
-    Height = 549
+    Height = 583
     Align = alRight
     TabOrder = 3
     object lblLog: TLabel
@@ -178,7 +163,7 @@ object frmMain: TfrmMain
       Left = 1
       Top = 16
       Width = 898
-      Height = 532
+      Height = 566
       Align = alClient
       ScrollBars = ssVertical
       TabOrder = 0

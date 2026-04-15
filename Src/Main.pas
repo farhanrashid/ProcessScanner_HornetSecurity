@@ -5,7 +5,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ExtCtrls, Vcl.StdCtrls, Vcl.ComCtrls,
-  System.Types, System.Generics.Collections, ProcessNode, FileSearchWorker;
+  System.Types, System.Generics.Collections, ProcessNode, FileSearchWorker, Vcl.Grids, Vcl.ValEdit;
 
 type
 
@@ -21,13 +21,13 @@ type
     tvProcesses: TTreeView;
     cbSystemProcess: TCheckBox;
     cbProcessOtherUsers: TCheckBox;
-    lvDetails: TListView;
     btnRefresh: TButton;
     CountdownTimer: TTimer;
     SplitterLog: TSplitter;
     btnRescan: TButton;
     btnStopAll: TButton;
     btnClearLog: TButton;
+    vleDeltails: TValueListEditor;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure btnRefreshClick(Sender: TObject);
@@ -175,10 +175,9 @@ begin
 
   if FSnapshot.TryGetValue(pid, ProcessNode) then
   begin
-    lvDetails.Items[0].SubItems[0] := ProcessNode.ExePath;
-    lvDetails.Items[1].SubItems[0] := ProcessNode.PID.ToString;
-    lvDetails.Items[2].SubItems[0] := ProcessNode.SessionID.ToString;
-
+    vleDeltails.Values['File path']  := ProcessNode.ExePath;
+    vleDeltails.Values['Process ID'] := ProcessNode.PID.ToString;
+    vleDeltails.Values['Session ID'] := ProcessNode.SessionID.ToString;
   end;
 end;
 
