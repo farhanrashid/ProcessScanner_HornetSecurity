@@ -10,3 +10,5 @@ TaskManager.dsk
 /Win64/Debug
 /Win64/Release
 ProcessScanner.delphilsp.json
+ProcessScanner.identcache
+ProcessScanner.dproj.local

@@ -193,11 +193,11 @@ begin
   if FSnapshot.TryGetValue(pid, ProcessNode) then
   begin
     if ProcessNode.IsScanFound then
-      Sender.Canvas.Font.Color := clBlue
+      Sender.Canvas.Font.Color := clGreen
     else if ProcessNode.ScanResult = srNotFound then
       Sender.Canvas.Font.Color := clRed
     else if ProcessNode.ScanResult = srAccessDenied then
-      Sender.Canvas.Font.Color := clGreen;
+      Sender.Canvas.Font.Color := clBlue;
   end;
 end;
 
