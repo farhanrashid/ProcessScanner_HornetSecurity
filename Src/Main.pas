@@ -192,8 +192,10 @@ begin
   pid := DWORD(NativeUInt(Node.Data));
   if FSnapshot.TryGetValue(pid, ProcessNode) then
   begin
-    if ProcessNode.IsScanFound then
+    if ProcessNode.ScanResult = srFound then
       Sender.Canvas.Font.Color := clGreen
+    else if ProcessNode.IsScanFound then
+      Sender.Canvas.Font.Color := clWebSeaGreen //clWebLightGreen
     else if ProcessNode.ScanResult = srNotFound then
       Sender.Canvas.Font.Color := clRed
     else if ProcessNode.ScanResult = srAccessDenied then
