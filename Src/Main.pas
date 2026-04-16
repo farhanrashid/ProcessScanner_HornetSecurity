@@ -39,6 +39,7 @@ type
     procedure btnRescanClick(Sender: TObject);
     procedure btnStopAllClick(Sender: TObject);
     procedure btnClearLogClick(Sender: TObject);
+    procedure FormActivate(Sender: TObject);
   private
     { Private declarations }
     FSnapshot : TSnapshot;
@@ -335,6 +336,11 @@ begin
   end;
 end;
 
+procedure TfrmMain.FormActivate(Sender: TObject);
+begin
+  Refresh;
+end;
+
 procedure TfrmMain.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   SaveResultsToFile;
@@ -352,7 +358,6 @@ begin
   FWorkers := TObjectDictionary<string, TFileSearchWorker>.Create([doOwnsValues]);
 
   FinRefresh := False;
-  Refresh;
 end;
 
 procedure TfrmMain.FormDestroy(Sender: TObject);
@@ -370,7 +375,6 @@ procedure TfrmMain.AddLog(aMessage : string);
 begin
   memoLog.Lines.Add(FormatDateTime('yyyy-mm-dd hh:nn:ss', Now) + ' - ' + aMessage);
 end;
-
 
 procedure TfrmMain.SaveResultsToFile;
 var

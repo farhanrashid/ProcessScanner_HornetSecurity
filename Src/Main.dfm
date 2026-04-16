@@ -10,6 +10,7 @@ object frmMain: TfrmMain
   Font.Height = -12
   Font.Name = 'Segoe UI'
   Font.Style = []
+  OnActivate = FormActivate
   OnClose = FormClose
   OnCreate = FormCreate
   OnDestroy = FormDestroy
