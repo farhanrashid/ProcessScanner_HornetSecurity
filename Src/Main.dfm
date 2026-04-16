@@ -134,7 +134,6 @@ object frmMain: TfrmMain
       Width = 1282
       Height = 88
       Align = alClient
-      Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goColSizing, goEditing, goAlwaysShowEditor, goThumbTracking]
       TabOrder = 0
       TitleCaptions.Strings = (
         'Property'
