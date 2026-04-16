@@ -54,6 +54,7 @@ type
     procedure RebuildTreeView(aOldSnapshot: TSnapshot; aOldRootNode: TProcessNode);
     procedure PopulateNode(ParentItem: TTreeNode; Node: TProcessNode);  //recursive
     procedure PopulateNewNode(aNewNode, aOldNode: TProcessNode);        //recursive
+    procedure ClearTreeNode(aSnapshot: TSnapshot);                      //recursive
     procedure UpdateScanWorkers(aCurrentFiles: TStrings);
 
     procedure SearchDone(aExePath: string; aResult: TScanResult);
@@ -229,8 +230,7 @@ begin
       for pid in aOldSnapshot.Keys do    // delete killed/gone processes
         if not FSnapshot.ContainsKey(pid) then
         begin
-          for node in aOldSnapshot[pid].Childs.Values do  //first set Nil too all child tree node, so that we dont call delete on them
-            node.TreeNode := Nil;
+          ClearTreeNode(aOldSnapshot[pid].Childs);
 
           if Assigned(aOldSnapshot[pid].TreeNode) then
             aOldSnapshot[pid].TreeNode.Delete;      // it will also delete all tree child nodes
@@ -276,7 +276,7 @@ begin
   
 end;
 
-procedure TfrmMain.PopulateNewNode(aNewNode, aOldNode: TProcessNode);
+procedure TfrmMain.PopulateNewNode(aNewNode, aOldNode: TProcessNode);  //recursive
 var
   node: TProcessNode;
   pid : DWORD;
@@ -290,7 +290,19 @@ begin
   end;
 end;
 
-procedure TfrmMain.PopulateNode(ParentItem: TTreeNode; Node: TProcessNode);
+procedure TfrmMain.ClearTreeNode(aSnapshot: TSnapshot);   //recursive
+var
+  node: TProcessNode;
+begin
+  for node in aSnapshot.Values do  //first set Nil too all child tree node, so that we dont call delete on them
+  begin
+    node.TreeNode := Nil;
+    ClearTreeNode(node.Childs);
+  end;
+
+end;
+
+procedure TfrmMain.PopulateNode(ParentItem: TTreeNode; Node: TProcessNode); //recursive
 var
   item  : TTreeNode;
   child : TProcessNode;
